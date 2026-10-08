@@ -1,0 +1,42 @@
+# --- LaTeX: archivos auxiliares de compilación ---
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.nav
+*.snm
+*.xdv
+documento/build/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# --- R ---
+.Rhistory
+.RData
+.Rproj.user/
+
+# --- Datos ---
+# Los datos crudos grandes no se suben; descomenta si aplica:
+# datos/crudos/*
+# !datos/crudos/.gitkeep
+
+# --- Sistema / editores ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*~
