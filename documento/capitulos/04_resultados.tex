@@ -1,0 +1,747 @@
+\chapter{Resultados}
+
+Este capítulo presenta los hallazgos obtenidos al aplicar la metodología descrita en el capítulo anterior al conjunto de 81 imágenes del gradiente de capacitancia. La estructura sigue el orden metodológico, separando los hallazgos asociados al procesamiento digital de imágenes y a la extracción de descriptores morfológicos correspondientes a los primeros objetivos específicos.
+
+A lo largo del capítulo se utilizan dos niveles de evidencia complementarios. Por un lado, se reportan estadísticos por imagen para el set de fabricación 2b (15~V, 1~kHz), seleccionado como referencia visual por su uniformidad y consistencia entre las nueve mediciones, junto con los resúmenes estadísticos del propio set y del conjunto global de 81 imágenes (media, desviación estándar, mínimo, mediana y máximo). Por otro, se muestran mosaicos $3\times3$ de las 9 imágenes del set 2b en cada etapa del pipeline (réplicas en filas, posiciones en columnas), que permiten contrastar visualmente el efecto de cada operación.
+
+\section{Procesamiento Digital de Imágenes}
+
+\subsection{Corrección de Crosstalk Topográfico}
+
+La Tabla~\ref{tab:crosstalk_2b} reporta la correlación de Pearson entre la señal eléctrica y la topográfica antes de la corrección, para las 9 imágenes del set 2b, junto con los resúmenes estadísticos del set y del conjunto global. La correlación residual posterior a la corrección no se incluye en la tabla, ya que es del orden de $10^{-16}$ por construcción del ajuste por mínimos cuadrados.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}[t]{0.42\textwidth}
+\centering
+\vspace{0pt}
+\includegraphics[width=\textwidth]{01_raw_2b.pdf}\\[2pt]
+\includegraphics[width=\textwidth]{02_crosstalk_2b.pdf}
+\caption{Mosaicos $3\times3$ del set 2b antes (arriba) y después (abajo) de la corrección de crosstalk topográfico.}
+\label{fig:res_crosstalk}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.55\textwidth}
+\centering
+\vspace{0pt}
+\captionof{table}{Correlación lineal entre la señal eléctrica cruda y la topográfica antes de la corrección de crosstalk.}
+\label{tab:crosstalk_2b}
+\small
+\begin{tabular}{lc}
+\toprule
+\textbf{Imagen / Estad.} & \textbf{Corr. pre-filtro} \\
+\midrule
+2b-1 & $\phantom{-}0.0522$ \\
+2b-2 & $\phantom{-}0.0040$ \\
+2b-3 & $-0.0121$ \\
+2b-4 & $\phantom{-}0.0212$ \\
+2b-5 & $\phantom{-}0.1230$ \\
+2b-6 & $-0.0062$ \\
+2b-7 & $\phantom{-}0.0331$ \\
+2b-8 & $-0.1085$ \\
+2b-9 & $-0.0226$ \\
+\midrule
+\multicolumn{2}{l}{\textit{Resumen Set 2b}} \\
+\quad Media           & $\phantom{-}0.0093$ \\
+\quad Desv. estándar  & $\phantom{-}0.0623$ \\
+\quad Mínimo          & $-0.1085$ \\
+\quad Mediana         & $\phantom{-}0.0040$ \\
+\quad Máximo          & $\phantom{-}0.1230$ \\
+\midrule
+\multicolumn{2}{l}{\textit{Resumen Global ($n=81$)}} \\
+\quad Media           & $-0.0285$ \\
+\quad Desv. estándar  & $\phantom{-}0.0750$ \\
+\quad Mínimo          & $-0.2125$ \\
+\quad Mediana         & $-0.0134$ \\
+\quad Máximo          & $\phantom{-}0.1332$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{figure}
+
+A nivel global, los valores individuales de correlación pre-filtro alcanzan extremos de $-0.2125$ y $0.1332$ a lo largo del dataset. Tras la aplicación del modelo, la correlación residual se anula a nivel numérico para todas las imágenes del conjunto.
+
+
+\subsection{Filtrado de Ruido Impulsivo}
+
+La Tabla~\ref{tab:impulsivo_2b} reporta el porcentaje de píxeles reemplazados por las dos instancias del filtro: la primera, aplicada tras la corrección de crosstalk con kernel $5\times5$ y umbral $3\sigma$ para suprimir ruido sal y pimienta; la segunda, aplicada tras la corrección de fondo con kernel $5\times1$ y umbral $2\sigma$ para suprimir líneas impulsivas horizontales.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\vspace{0pt}
+\includegraphics[width=\textwidth]{03_syp5x5_2b.pdf}\\[2pt]
+\includegraphics[width=\textwidth]{05_syp5x1_2b.pdf}
+\caption{Mosaicos $3\times3$ del set 2b tras las dos instancias del filtro. Arriba: tras SyP $5\times5$. Abajo: tras filtro de líneas $5\times1$.}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\vspace{0pt}
+\captionof{table}{Porcentaje de píxeles reemplazados por las dos instancias del filtro de ruido impulsivo.}
+\label{tab:impulsivo_2b}
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Imagen / Estad.} & \textbf{SyP $5\times5$ [\%]} & \textbf{Líneas $5\times1$ [\%]} \\
+\midrule
+2b-1 & $4.35$ & $16.62$ \\
+2b-2 & $1.57$ & $20.82$ \\
+2b-3 & $0.49$ & $17.30$ \\
+2b-4 & $0.31$ & $27.25$ \\
+2b-5 & $0.44$ & $16.66$ \\
+2b-6 & $0.40$ & $37.12$ \\
+2b-7 & $1.07$ & $17.39$ \\
+2b-8 & $1.48$ & $16.54$ \\
+2b-9 & $0.68$ & $35.04$ \\
+\midrule
+\multicolumn{3}{l}{\textit{Resumen Set 2b}} \\
+\quad Media           & $1.20$  & $22.75$ \\
+\quad Desv. estándar  & $1.27$  & $\phantom{0}8.32$ \\
+\quad Mínimo          & $0.31$  & $16.54$ \\
+\quad Mediana         & $0.68$  & $17.39$ \\
+\quad Máximo          & $4.35$  & $37.12$ \\
+\midrule
+\multicolumn{3}{l}{\textit{Resumen Global ($n=81$)}} \\
+\quad Media           & $\phantom{0}3.73$ & $23.18$ \\
+\quad Desv. estándar  & $\phantom{0}8.36$ & $\phantom{0}8.09$ \\
+\quad Mínimo          & $\phantom{0}0.24$ & $14.26$ \\
+\quad Mediana         & $\phantom{0}1.37$ & $19.60$ \\
+\quad Máximo          & $47.32$           & $46.44$ \\
+\bottomrule
+\end{tabular}
+\label{fig:res_impulsivo}
+\end{minipage}
+\end{figure}
+
+La primera instancia reemplaza en promedio el 3.73\% de los píxeles a nivel global, con un máximo individual del 47.32\% sobre el conjunto completo. La segunda instancia reemplaza en promedio el 23.18\% global, con un mínimo del 14.26\% y un máximo del 46.44\%.
+
+
+\subsection{Corrección de Artefactos de Barrido}
+
+La Tabla~\ref{tab:artefactos_2b} reporta la varianza entre filas, calculada como la varianza de las medias por fila de la imagen, antes y después del ajuste descrito en la metodología.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\vspace{0pt}
+\includegraphics[width=\textwidth]{04_artefactos_2b.pdf}
+\caption{Mosaico $3\times3$ del set 2b tras la corrección de artefactos de barrido.}
+\label{fig:res_artefactos}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\vspace{0pt}
+\captionof{table}{Varianza entre filas antes y después de la corrección de artefactos de barrido.}
+\label{tab:artefactos_2b}
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Imagen / Estad.} & \textbf{Pre-filtro} & \textbf{Post-filtro} \\
+\midrule
+2b-1 & $2.5357$ & $0.5440$ \\
+2b-2 & $3.6080$ & $0.0833$ \\
+2b-3 & $1.5582$ & $0.0862$ \\
+2b-4 & $1.7520$ & $0.0316$ \\
+2b-5 & $0.4934$ & $0.0915$ \\
+2b-6 & $0.7136$ & $0.1753$ \\
+2b-7 & $0.8245$ & $0.3114$ \\
+2b-8 & $0.9550$ & $0.2137$ \\
+2b-9 & $0.3977$ & $0.2134$ \\
+\midrule
+\multicolumn{3}{l}{\textit{Resumen Set 2b}} \\
+\quad Media           & $1.4265$  & $0.1945$ \\
+\quad Desv. estándar  & $1.0686$  & $0.1574$ \\
+\quad Mínimo          & $0.3977$  & $0.0316$ \\
+\quad Mediana         & $0.9550$  & $0.1753$ \\
+\quad Máximo          & $3.6080$  & $0.5440$ \\
+\midrule
+\multicolumn{3}{l}{\textit{Resumen Global ($n=81$)}} \\
+\quad Media           & $\phantom{0}1.7284$  & $0.1313$ \\
+\quad Desv. estándar  & $\phantom{0}2.0774$  & $0.1566$ \\
+\quad Mínimo          & $\phantom{0}0.1920$  & $0.0086$ \\
+\quad Mediana         & $\phantom{0}1.2605$  & $0.0862$ \\
+\quad Máximo          & $16.3627$            & $1.1876$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{figure}
+
+A nivel global, la media de la varianza entre filas se reduce de $1.7284$ a $0.1313$, una reducción superior a un orden de magnitud. La mediana sigue el mismo patrón ($1.2605 \to 0.0862$). El máximo individual pre-filtro ($16.36$) corresponde a una imagen con artefactos de escaneo extremos; tras el filtro su contribución se reduce a $1.1876$. La inspección visual de los mosaicos confirma el aplanamiento del fondo y la atenuación de los artefactos horizontales en todas las imágenes del conjunto.
+
+
+
+
+\subsection{Segmentación Multiescala y Binarización}
+ 
+La etapa final del procesamiento aísla la red de CNTs en máscaras binarias mediante la integración de tres binarizaciones complementarias. La configuración del pipeline (sensibilidad $0.55$, ventana local $21$~px, ventana regional $51$~px, $6$ clases en Otsu, $50$ píxeles mínimos por componente) se determinó por inspección visual durante el desarrollo, ajustando los parámetros hasta que las máscaras representaran adecuadamente la red sobre el conjunto de imágenes. Los mosaicos del set 2b en las salidas individuales de las tres binarizaciones se reportan en la Figura~\ref{fig:res_bin_individuales}.
+
+
+ 
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{06_norm_2b.pdf}
+     
+    \end{minipage}\hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{07_bw_local_2b.pdf}
+    \end{minipage}
+ 
+
+ 
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{08_bw_global_2b.pdf}
+      
+    \end{minipage}\hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{09_bw_regional_2b.pdf}
+      
+    \end{minipage}
+    \caption{Mosaicos $3\times3$ del set 2b en la etapa de binarización multiescala: señal normalizada de entrada y salidas individuales de las tres binarizaciones complementarias antes de la conjunción.}
+    \label{fig:res_bin_individuales}
+\end{figure}
+ 
+La binarización local recupera estructuras de alta definición pero introduce fragmentación granular en regiones de fondo. La binarización global produce regiones de mayor extensión espacial con menor definición de borde. La binarización regional opera como filtro espacial de escala intermedia. La conjunción lógica de las tres máscaras y el cierre morfológico posterior dan lugar a las representaciones empleadas en la extracción de descriptores; sus mosaicos se reportan en la Figura~\ref{fig:res_bin_postproc}.
+ 
+\begin{figure}[H]
+\centering
+\begin{minipage}[t]{0.3\textwidth}
+\centering
+\vspace{0pt}
+\includegraphics[width=\textwidth]{10_bw2_2b.pdf}\\[2pt]
+\includegraphics[width=\textwidth]{11_bw2closed_2b.pdf}\\[2pt]
+\includegraphics[width=\textwidth]{12_skel_2b.pdf}
+\caption{Mosaicos $3\times3$ del set 2b tras la integración. Arriba: máscara estricta $M_{e}$. Centro: máscara morfológica $M_{mor}$. Abajo: esqueleto.}
+\label{fig:res_bin_postproc}
+
+\end{minipage}\hfill
+\begin{minipage}[t]{0.7\textwidth}
+\centering
+\vspace{0pt}
+\captionof{table}{Estadísticos por imagen sobre las máscaras y el esqueleto para el set 2b.}
+\label{tab:bin_2b}
+\footnotesize
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Imagen / Estad.} & \textbf{Cob. $M_{e}$} & \textbf{$N_{c}$ $M_{e}$} & \textbf{Cob. $M_{mor}$} & \textbf{$N_{c}$ $M_{mor}$} & \textbf{Skel [px]} \\
+\midrule
+2b-1 & $0.2005$ & $132$ & $0.2304$ & $\phantom{0}99$ & $12\,634$ \\
+2b-2 & $0.2120$ & $155$ & $0.2531$ & $107$ & $13\,767$ \\
+2b-3 & $0.2097$ & $128$ & $0.2465$ & $100$ & $12\,318$ \\
+2b-4 & $0.2089$ & $162$ & $0.2396$ & $126$ & $11\,628$ \\
+2b-5 & $0.2215$ & $161$ & $0.2649$ & $110$ & $13\,863$ \\
+2b-6 & $0.2103$ & $154$ & $0.2370$ & $119$ & $11\,656$ \\
+2b-7 & $0.2232$ & $150$ & $0.2522$ & $118$ & $11\,809$ \\
+2b-8 & $0.2156$ & $150$ & $0.2457$ & $124$ & $11\,574$ \\
+2b-9 & $0.2167$ & $169$ & $0.2305$ & $147$ & $10\,479$ \\
+\midrule
+\multicolumn{6}{l}{\textit{Resumen Set 2b}} \\
+\quad Media           & $0.2132$ & $151.2$ & $0.2444$ & $116.7$ & $12\,192$ \\
+\quad Desv. estándar  & $0.0070$ & $\phantom{0}13.5$  & $0.0114$ & $\phantom{0}15.0$  & $\phantom{0\,}1\,093$ \\
+\quad Mínimo          & $0.2005$ & $128$   & $0.2304$ & $\phantom{0}99$    & $10\,479$ \\
+\quad Mediana         & $0.2120$ & $154$   & $0.2457$ & $118$              & $11\,809$ \\
+\quad Máximo          & $0.2232$ & $169$   & $0.2649$ & $147$              & $13\,863$ \\
+\midrule
+\multicolumn{6}{l}{\textit{Resumen Global ($n=81$)}} \\
+\quad Media           & $0.2202$ & $180.6$ & $0.2597$ & $120.5$ & $14\,252$ \\
+\quad Desv. estándar  & $0.0155$ & $\phantom{0}52.7$  & $0.0391$ & $\phantom{0}23.1$  & $\phantom{0\,}4\,651$ \\
+\quad Mínimo          & $0.1811$ & $109$   & $0.1878$ & $\phantom{0}76$    & $\phantom{0\,}8\,045$ \\
+\quad Mediana         & $0.2208$ & $162$   & $0.2529$ & $120$              & $13\,112$ \\
+\quad Máximo          & $0.2749$ & $396$   & $0.4102$ & $217$              & $32\,688$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{figure}
+ 
+La Tabla~\ref{tab:bin_2b} reporta la cobertura y el número de componentes conexas sobre la máscara estricta $M_{e}$ y sobre la máscara morfológica $M_{mor}$, junto con la longitud del esqueleto en píxeles, para cada una de las 9 imágenes del set 2b, con los resúmenes estadísticos del set y del conjunto global.
+ 
+ 
+La cobertura sobre la máscara estricta presenta una desviación estándar de $0.0070$ entre las 9 imágenes del set 2b, frente a $0.0155$ a nivel global. La cobertura sobre la máscara morfológica es sistemáticamente mayor que la estricta (paso de $0.2132$ a $0.2444$ en el set 2b y de $0.2202$ a $0.2597$ a nivel global), reflejando el efecto del cierre que rellena huecos y une componentes vecinos. El número de componentes conexas se reduce sistemáticamente al aplicar el cierre, con un promedio de paso de $151.2$ a $116.7$ componentes para el set 2b y de $180.6$ a $120.5$ a nivel global. La longitud del esqueleto en el set 2b oscila entre $10\,479$ y $13\,863$~px, mientras que en el dataset completo abarca un rango más amplio que va de $8\,045$ a $32\,688$~px.
+ 
+
+\subsubsection{Validación de la Elección de Parámetros}
+ 
+La configuración del pipeline depende de cinco parámetros (sensibilidad, píxeles mínimos por componente, ventana local, ventana regional y número de clases en Otsu). Para examinar cómo se comporta el pipeline al perturbar cada parámetro alrededor del valor elegido, se realizó un barrido sistemático sobre los siguientes rangos:
+ 
+\begin{itemize}
+    \item Sensibilidad: $\{0.3; 0.4; 0.5; 0.55; 0.6; 0.7; 0.8\}$.
+    \item Píxeles mínimos por componente: $\{10, 25, 50, 100\}$.
+    \item Ventana local: $\{9, 15, 21, 31\}$ px.
+    \item Ventana regional: $\{51, 101, 151\}$ px.
+    \item Número de clases en Otsu: $\{4, 5, 6, 8\}$.
+\end{itemize}
+ 
+La combinación de variantes genera $1\,344$ configuraciones que, evaluadas sobre las 81 imágenes, producen $217\,728$ filas de validación. La Figura~\ref{fig:res_validacion_param} reporta la cobertura media y el número medio de componentes conexas $N_c$ al variar cada parámetro manteniendo los otros cuatro fijos en sus valores del pipeline. Ambas métricas se computan sobre la máscara estricta $M_e$ (sin cierre morfológico).
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{validacion_parametros.pdf}
+    \caption{Cobertura media (eje izquierdo, azul) y número medio de componentes conexas $N_c$ (eje derecho, naranja) al variar cada parámetro del pipeline manteniendo los otros cuatro fijos en sus valores elegidos. }
+    \label{fig:res_validacion_param}
+\end{figure}
+ 
+La sensibilidad es el parámetro más influyente. Al variarla entre $0.3$ y $0.8$, la cobertura crece monótonamente de $11.51\%$ a $45.18\%$ mientras que el número de componentes describe un máximo intermedio: pasa de $\sim 254$ en $\text{sens}=0.3$, alcanza $\sim 274$ en $\text{sens}=0.4$, y desciende hasta $\sim 65$ en $\text{sens}=0.8$. Este comportamiento no monótono refleja dos regímenes opuestos: en sensibilidades bajas, el umbral adaptativo solo detecta los píxeles más brillantes, generando muchos componentes pequeños desconectados; en sensibilidades altas, el umbral acepta regiones grandes y las componentes se fusionan en blobs extensos.
+ 
+El número de píxeles mínimos por componente $p_{\min}$ actúa como filtro estructural sin alterar el material total detectado. Al variar entre $10$ y $100$, la cobertura permanece esencialmente constante ($\sim 22.2\%$), pero el número de componentes cae de $616$ a $146$, reflejando la eliminación de componentes pequeños como artefactos espurios.
+ 
+La ventana local controla la escala espacial del umbral adaptativo. Al variarla entre $9$ y $31$ px, la cobertura sube de $19.58\%$ a $25.32\%$ y el número de componentes baja de $483$ a $145$. Ventanas más grandes producen máscaras con regiones más conectadas y mayor área total.
+ 
+La ventana regional y el número de clases en Otsu producen variaciones marginales: cobertura entre $20.16\%$ y $22.02\%$ (factor $1.1$) y componentes entre $167$ y $181$ para la ventana regional; cobertura entre $21.57\%$ y $22.10\%$ y componentes entre $177$ y $182$ para Otsu.
+
+ 
+\subsubsection{Análisis de Robustez}
+ 
+Adicionalmente al estudio de sensibilidad alrededor del valor elegido, se examinó el comportamiento de la configuración del pipeline respecto al conjunto completo de $1\,344$ configuraciones del barrido en términos de tres pares de métricas: cada métrica primaria (cobertura media, número de componentes $N_c$, fragmentación normalizada FN) en función de su coeficiente de variación entre las 81 imágenes. La estructura magnitud--dispersión permite evaluar simultáneamente cuánto detecta cada configuración y qué tan estable es ese resultado a lo largo del dataset.
+ 
+La Figura~\ref{fig:robustez_cobertura} reporta la cobertura media en función de su CV entre imágenes, coloreada por FN media. La configuración del pipeline (cobertura $22.02\%$, CV $0.0706$) cae en la región de mínima dispersión, con valores de FN comparativamente bajos. Las configuraciones con coberturas inferiores al $10\%$ presentan dispersión sistemáticamente mayor, así como las de cobertura superior al $30\%$.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{robustez_cobertura.pdf}
+    \caption{Cobertura media frente a su coeficiente de variación entre las 81 imágenes para las $1\,344$ configuraciones del barrido.}
+    \label{fig:robustez_cobertura}
+\end{figure}
+ 
+La Figura~\ref{fig:robustez_componentes} reporta lo análogo para el número de componentes. La configuración del pipeline ($N_c=180,6$; CV $0.2917$) cae en una zona típica del espacio de configuraciones, sin valores extremos en ninguno de los dos ejes. El número de componentes y su CV no se concentran en una región particular tan marcada como en el caso de la cobertura, reflejando que el conteo de componentes depende fuertemente de la estructura específica de cada imagen.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{robustez_componentes.pdf}
+    \caption{Número medio de componentes conexas $N_c$ frente a su coeficiente de variación entre las 81 imágenes para las $1\,344$ configuraciones del barrido.}
+    \label{fig:robustez_componentes}
+\end{figure}
+ 
+Finalmente, la Figura~\ref{fig:robustez_FN} reporta la fragmentación normalizada (en escala logarítmica) frente a su CV. La configuración del pipeline (FN $=815$, CV $0.2402$) se sitúa entre el primer cuartil ($Q_1=582$) y la mediana ($1\,311$) de la distribución de FN sobre las $1\,344$ configuraciones, con CV de FN en valores comparativamente bajos. El color, indicando la cobertura media, muestra que el pipeline opera en una región del espacio donde coexisten coberturas intermedias con FN bajas.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{robustez_FN.pdf}
+    \caption{Fragmentación normalizada media (eje horizontal en escala logarítmica) frente a su coeficiente de variación entre las 81 imágenes para las $1\,344$ configuraciones del barrido.}
+    \label{fig:robustez_FN}
+\end{figure}
+ 
+La lectura conjunta de las tres figuras indica que la configuración del pipeline reúne tres propiedades de manera simultánea: una cobertura intermedia (sin sobre ni subdetectar), una dispersión mínima de esa cobertura entre las 81 imágenes, y una FN baja respecto al espacio completo de configuraciones. Estas propiedades no son simultáneas en toda configuración del barrido: existen configuraciones con menor CV de cobertura pero cobertura mucho más baja, y configuraciones con FN más baja pero coberturas extremas. La combinación específica que produce el pipeline no es la óptima en ninguna métrica aislada, sino una posición de balance en la que las tres propiedades se mantienen razonables a la vez. Ademas, la configuración se ve apoyada en la calidad visual de la gran mayoria de binarizaciones generadas.
+
+
+
+\subsubsection{Comparación con Métodos Alternativos}
+\label{sec:metodos_alternativos}
+ 
+Para justificar empíricamente la elección de la triple conjunción frente a binarizaciones más simples, se evaluaron tres métodos alternativos sobre las 81 imágenes del dataset en la configuración del pipeline: \textit{Solo Local} (únicamente $M_L$), \textit{Global+Local} ($M_G \wedge M_L$) y \textit{Triple AND} ($M_G \wedge M_R \wedge M_L$, el método del pipeline). Adicionalmente se evaluó el \textit{Pipeline completo}, que aplica el mecanismo de respaldo estandarizado cuando la cobertura del Triple AND cae por debajo del 15\%. La Tabla~\ref{tab:comparacion_metodos} reporta cinco métricas por método.
+ 
+\begin{table}[H]
+\centering
+\caption{Comparación entre las cuatro alternativas de binarización sobre las 81 imágenes del dataset, en la configuración del pipeline ($\text{sens}=0.55$, $p_{\min}=50$, $v_L=21$, $v_R=51$, Otsu $k=6$). La columna ``tam. medio'' es el tamaño medio de componente conexo en píxeles. La columna ``min cob.'' reporta el mínimo de cobertura observado en el dataset.}
+\label{tab:comparacion_metodos}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Método} & \textbf{Cob. media} & \textbf{CV cob.} & \textbf{$N_c$ media} & \textbf{tam. medio [px]} & \textbf{FN} & \textbf{min cob.} \\
+\midrule
+Solo Local                  & $0.2720$ & $0.0810$ & $271.0$ & $1\,110$ & $988$ & $0.2038$ \\
+Global+Local                & $0.2562$ & $0.1214$ & $237.3$ & $1\,215$ & $916$ & $0.1107$ \\
+Triple AND (sin fallback)   & $0.2190$ & $0.0916$ & $179.6$ & $1\,348$ & $818$ & $0.1050$ \\
+Pipeline (con fallback)     & $0.2202$ & $0.0706$ & $180.6$ & $1\,350$ & $815$ & $0.1811$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+ 
+Los resultados revelan cuatro tendencias.
+ 
+\textbf{Consolidación estructural.} El Triple AND produce componentes de mayor tamaño promedio que las alternativas ($1\,348$~px frente a $1\,110$~px de Solo Local, incremento del orden del $20\%$). La conjunción de las tres escalas actúa como un filtro multiescala que solo retiene los píxeles confirmados simultáneamente por la binarización local, la global y la regional. Solo Local, al no contar con este filtrado redundante, fragmenta más la red y genera componentes más pequeños asociados a variaciones locales de fondo.
+ 
+\textbf{Cobertura conservadora.} El Triple AND produce una cobertura del $21.9\%$ frente al $27.2\%$ de Solo Local. Para nanocompuestos CNT/poliimida con cargas como las del dataset, una cobertura del orden del $20\%$ es físicamente razonable.
+ 
+\textbf{Fragmentación normalizada.} El Triple AND obtiene la menor FN de los métodos sin fallback ($818$), mejorando frente a Solo Local ($988$) y Global+Local ($916$). Este indicador combina cobertura y conteo de componentes, y su menor valor en el Triple AND refleja un mejor balance entre detección y consolidación.
+ 
+\textbf{Efecto del mecanismo de respaldo.} El Triple AND presenta un mínimo de cobertura del dataset de $0.105$, asociado a la imagen 0a-9 (set $5\, \text{V}$/$10$~Hz). El Pipeline completo eleva este mínimo a $0.181$ y reduce el coeficiente de variación de la cobertura entre imágenes de $0.092$ a $0.071$. 
+La imagen 0a-9 presenta el rango dinámico de señal más alto del dataset 
+(desviación estándar normalizada de $7.98$, frente a una mediana global de $2.39$), 
+lo que se traduce visualmente en una red de CNTs de alto contraste sobre un fondo bien definido. Esta condición, que en términos físicos refleja una buena calidad de adquisición y CNTs cercanos a la superficie, genera una distribución de intensidad fuertemente 
+bimodal en $E_{\text{seg}}$. En esa distribución, la binarización local $M_L$, al adaptar su umbral por vecindad, responde mejor al contraste de intensidad local sin adaptarse a la tendencia global del Otsu con multiples clasificaciones definidas.  Usar solo $M_L$ produce una cobertura $0.204$, coherente con el resto 
+del set 0a (coberturas entre $0.19$ y $0.23$). El mecanismo de respaldo aprovecha esta robustez local: cuando la conjunción cae 
+por debajo del $15\%$, se sustituye por $M_L$ del propio Triple AND, restaurando 
+la cobertura al valor consistente con el set.
+
+
+
+En conjunto, la comparación empírica respalda la elección del Triple AND como método principal: produce componentes mejor consolidados, una cobertura coherente con la densidad esperada de la fase de relleno y la fragmentación normalizada más baja del conjunto de alternativas evaluadas. El mecanismo de respaldo se interpreta no como una corrección de imágenes patológicas, sino como una salvaguarda metodológica para los casos en que la calidad de adquisición invalida los supuestos sobre los que opera la conjunción de las tres escalas.
+
+\section{Validación de las Representaciones de Trabajo}
+\label{sec:representaciones}
+ 
+Las máscaras y el esqueleto definidos en la Sección de Metodología dependen de tres parámetros que no se barrieron en la sección anterior: el radio del cierre morfológico que define $M_{mor}$, la ventana de la corrección de rayas RLOESS empleada para construir la imagen eléctrica reconstruida $E_{B}$, y el número de iteraciones de poda de pixeles aplicado al esqueleto. Esta sección reporta la validación empírica de los parámetros que más influyen sobre los descriptores derivados.
+ 
+\subsection{Radio del Cierre Morfológico}
+\label{sec:radio_cierre}
+ 
+Para examinar si la elección $r=3$ px representa un punto de operación adecuado para el cierre morfológico que define $M_{mor}$, se realizó un barrido del radio sobre las 81 imágenes del dataset manteniendo la configuración del pipeline fija. Se evaluaron nueve valores de radio entre $1$ y $10$~px ($\sim$59--586~nm en escala física). Para cada radio se midieron, sobre la máscara morfológica resultante, la cobertura, el número de componentes, la longitud del esqueleto post-poda, el índice de percolación, y dos métricas diferenciales respecto a la máscara estricta $M_e$: el material agregado ($\Delta\text{cob}$) y las componentes fusionadas ($\Delta N_c$).
+ 
+\begin{table}[H]
+\centering
+\caption{Estadísticos del barrido del radio del cierre morfológico sobre las 81 imágenes del dataset. Los valores reportados corresponden a las medias sobre el conjunto. Las columnas $d(\Delta\text{cob})/dr$ y $d(\Delta N_c)/dr$ son las derivadas incrementales por píxel de radio, que permiten identificar el codo del comportamiento del cierre.}
+\label{tab:barrido_radio}
+\small
+\begin{tabular}{ccccccccc}
+\toprule
+\textbf{$r$ [px]} & \textbf{$r$ [nm]} & \textbf{Cob. $M_{mor}$} & \textbf{$N_c$ $M_{mor}$} & \textbf{$\Delta$ cob.} & \textbf{$\Delta N_c$} & \textbf{Skel [$\mu$m]} & \textbf{$d(\Delta\text{cob})/dr$} & \textbf{$d(\Delta N_c)/dr$} \\
+\midrule
+$\phantom{0}1$ & $\phantom{0}58.6$ & $0.2421$ & $143.8$ & $0.0218$ & $\phantom{00}36.9$ & $1\,259$           & --       & --       \\
+$\phantom{0}2$ & $117.2$           & $0.2533$ & $129.7$ & $0.0331$ & $\phantom{00}51.0$ & $\phantom{0\,}899$ & $0.0112$ & $14.09$  \\
+$\phantom{0}3$ & $175.8$           & $0.2597$ & $120.5$ & $0.0395$ & $\phantom{00}60.2$ & $\phantom{0\,}835$ & $0.0064$ & $\phantom{0}9.21$  \\
+$\phantom{0}4$ & $234.4$           & $0.2645$ & $114.6$ & $0.0443$ & $\phantom{00}66.1$ & $\phantom{0\,}719$ & $0.0048$ & $\phantom{0}5.91$  \\
+$\phantom{0}5$ & $293.0$           & $0.2721$ & $102.0$ & $0.0519$ & $\phantom{00}78.6$ & $\phantom{0\,}684$ & $0.0076$ & $12.54$  \\
+$\phantom{0}6$ & $351.6$           & $0.2792$ & $\phantom{0}90.0$  & $0.0589$ & $\phantom{00}90.6$ & $\phantom{0\,}677$ & $0.0070$ & $12.02$  \\
+$\phantom{0}7$ & $410.2$           & $0.2864$ & $\phantom{0}78.7$  & $0.0662$ & $\phantom{0}101.9$ & $\phantom{0\,}678$ & $0.0073$ & $11.28$  \\
+$\phantom{0}8$ & $468.8$           & $0.2904$ & $\phantom{0}73.7$  & $0.0702$ & $\phantom{0}107.0$ & $\phantom{0\,}663$ & $0.0040$ & $\phantom{0}5.05$  \\
+$10$           & $585.9$           & $0.3090$ & $\phantom{0}52.3$  & $0.0887$ & $\phantom{0}128.4$ & $\phantom{0\,}677$ & $0.0093$ & $10.70$  \\
+\bottomrule
+\end{tabular}
+\end{table}
+ 
+Las dos métricas diferenciales presentan un comportamiento característico que permite identificar el codo del cierre. La derivada $d(\Delta\text{cob})/dr$ decrece monótonamente entre $r=2$ y $r=4$ ($0.0112 \to 0.0064 \to 0.0048$) y rebota al pasar a $r=5$ ($0.0076$). La derivada $d(\Delta N_c)/dr$ sigue el mismo patrón ($14.09 \to 9.21 \to 5.91$ entre $r=2$ y $r=4$, con rebote a $12.54$ en $r=5$). Ambas derivadas alcanzan su mínimo conjunto en el intervalo $r=3 \to r=4$. Esto indica que el incremento $r=3 \to r=4$ es el menos productivo: aporta poca reparación adicional de discontinuidades y poco crecimiento de la cobertura. Más allá de $r=4$, el cierre entra en un régimen distinto: la tasa de fusión de componentes se eleva nuevamente, pero acompañada de un crecimiento más acelerado de la cobertura, lo que sugiere que las nuevas conexiones provienen de la agregación de regiones que no corresponden a continuidades reales de la red.
+ 
+La longitud del esqueleto refuerza esta lectura. Entre $r=3$ y $r=5$ el esqueleto se acorta de $835$ a $684$~$\mu$m (caída del $18\%$), mientras que entre $r=5$ y $r=10$ permanece esencialmente estable alrededor de $660$--$680$~$\mu$m. La caída brusca corresponde a la pérdida de ramas finas del esqueleto que se engordan y desaparecen al aumentar el radio del elemento estructurante; $r=3$ es el último valor que preserva la longitud de red por encima de los $800$~$\mu$m.
+ 
+El índice de percolación complementa la evidencia. En $r=3$ vale $0.075$, un valor coherente con una red naturalmente fragmentada sobre el dataset. A partir de $r=5$ supera $0.09$ y crece rápidamente hasta $0.24$ en $r=10$, reflejando que los cierres grandes conectan artificialmente regiones que físicamente no deberían formar un mismo clúster.
+ 
+En conjunto, la elección $r=3$ px ($\sim 176$~nm) coincide con el régimen en el que el cierre repara discontinuidades reales con un costo mínimo en agregación espuria, antes del punto de saturación a partir del cual el incremento del radio degrada la morfología de la red. El valor físico justificado en la metodología (radio del orden de la escala típica de discontinuidad por penetración profunda) cae empíricamente en la zona de máxima eficiencia del cierre.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{barrido_radio_cierre.pdf}
+    \caption{Comportamiento del cierre morfológico al variar el radio del elemento estructurante. Paneles: (a) material agregado $\Delta\text{cob}$, (b) componentes fusionadas $\Delta N_c$, (c) longitud del esqueleto $M_{mor}$ post-poda, (d) índice de percolación. El valor $r=3$ corresponde a la elección del pipeline.}
+    \label{fig:res_barrido_radio}
+\end{figure}
+
+
+\subsection{Ventana de la Corrección RLOESS}
+\label{sec:ventana_rloess}
+ 
+La imagen eléctrica reconstruida $E_{B}$ depende del tamaño de la ventana empleada por la función \texttt{smoothdata} con método \texttt{rloess} en la corrección de rayas verticales. El pipeline emplea una ventana de $50$ filas. Para validar esta elección se realizó un barrido sobre ocho valores de ventana entre $10$ y $300$ filas, manteniendo la configuración del pipeline en todas las demás etapas. Para cada ventana se evaluaron, sobre $E_{B}$ y sobre la máscara estricta $M_e$ del pipeline real, tres descriptores del perfil vertical y los cuatro descriptores de intensidad (media, desviación estándar, percentil 90 y gradiente medio).
+ 
+\subsubsection*{Comportamiento del perfil corregido}
+ 
+\begin{table}[H]
+\centering
+\caption{Estadísticos del barrido sobre la ventana RLOESS, evaluados sobre las 81 imágenes del dataset. La pendiente residual se reporta como el valor absoluto máximo del ajuste lineal del perfil de $E_{B}$.}
+\label{tab:barrido_rloess}
+\small
+\begin{tabular}{cccccc}
+\toprule
+\textbf{Ventana} & \textbf{Pendiente residual} & \textbf{Rango perfil} & \textbf{RMS perfil} & \textbf{RMS rayas} & \textbf{Rango tendencia} \\
+\textbf{[filas]} & \textbf{máx abs [pm/nm]} & \textbf{mediana [pm]} & \textbf{mediana [pm]} & \textbf{mediana [pm]} & \textbf{mediana [pm]} \\
+\midrule
+$10$  & $0.0024$ & $49.07$ & $6.34$ & $1.86$ & $49.07$ \\
+$25$  & $0.0025$ & $45.80$ & $6.21$ & $2.38$ & $45.80$ \\
+$50$  & $0.0025$ & $43.02$ & $5.98$ & $2.71$ & $43.02$ \\
+$75$  & $0.0023$ & $36.79$ & $5.87$ & $2.92$ & $36.79$ \\
+$100$ & $0.0023$ & $36.67$ & $5.51$ & $3.04$ & $36.67$ \\
+$150$ & $0.0024$ & $33.83$ & $5.19$ & $3.43$ & $33.83$ \\
+$200$ & $0.0023$ & $32.61$ & $4.76$ & $3.71$ & $32.61$ \\
+$300$ & $0.0023$ & $29.54$ & $4.42$ & $3.99$ & $29.54$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+ 
+La pendiente residual del perfil de $E_{B}$ es esencialmente invariante a la ventana (máximo absoluto del orden de $10^{-3}$~pm/nm en todo el rango barrido). Este resultado refleja una propiedad inherente del método: RLOESS preserva la tendencia lineal global del perfil al suavizar, por lo que la pendiente que sobrevive al ajuste posterior no depende de la elección de la ventana. La pendiente residual aporta evidencia de que el método funciona como debe (no introduce tendencia lineal espuria), pero no es informativa para identificar un punto óptimo dentro del barrido.
+ 
+El rango del perfil y el RMS de las rayas estimadas describen un balance entre dos regímenes opuestos. Para ventanas pequeñas ($v=10$), el ajuste RLOESS sigue muy de cerca el perfil original ---rango de tendencia $49$~pm, RMS de rayas $1.86$~pm--- indicando que parte de la variación que el método atribuye a la tendencia es en realidad ruido vertical. Para ventanas grandes ($v=300$), el ajuste captura solo la componente macroscópica del perfil ---rango $29$~pm--- y traslada al ``ruido de rayas'' una fracción mayor de las variaciones intermedias ---RMS $3.99$~pm---. El valor del pipeline ($v=50$) cae en el régimen intermedio: el rango de la tendencia preservada es $43$~pm, coherente con la mediana global reportada en la sección de descriptores, y la RMS de rayas es moderada ($2.71$~pm).
+ 
+\subsubsection*{Estabilidad de los descriptores derivados}
+ 
+\begin{table}[H]
+\centering
+\caption{Cambio porcentual medio de los descriptores de intensidad y del gradiente medio respecto a la configuración del pipeline ($v=50$), promediado sobre las 81 imágenes del dataset.}
+\label{tab:rloess_estabilidad}
+\small
+\begin{tabular}{ccccc}
+\toprule
+\textbf{Ventana} & \textbf{$\Delta$ int. media [\%]} & \textbf{$\Delta$ int. std [\%]} & \textbf{$\Delta$ int. P90 [\%]} & \textbf{$\Delta$ grad. medio [\%]} \\
+\midrule
+$10$  & $0.059$ & $0.808$ & $0.126$ & $2.324$ \\
+$25$  & $0.042$ & $0.426$ & $0.072$ & $0.541$ \\
+$50$  & $0.000$ & $0.000$ & $0.000$ & $0.000$ \\
+$75$  & $0.035$ & $0.333$ & $0.051$ & $0.129$ \\
+$100$ & $0.056$ & $0.558$ & $0.102$ & $0.180$ \\
+$150$ & $0.097$ & $0.866$ & $0.172$ & $0.246$ \\
+$200$ & $0.138$ & $1.268$ & $0.237$ & $0.280$ \\
+$300$ & $0.150$ & $1.728$ & $0.284$ & $0.306$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+ 
+La intensidad media y el percentil 90 son extremadamente robustos: en todo el rango barrido el cambio respecto a $v=50$ permanece por debajo del $0.3\%$. La desviación estándar y el gradiente medio son más sensibles al extremo inferior del barrido. El gradiente medio cambia un $2.3\%$ con $v=10$ y se estabiliza en valores por debajo del $0.3\%$ a partir de $v=25$. Este salto refleja que con ventanas muy pequeñas la corrección de rayas absorbe parte de las variaciones espaciales reales que contribuyen al gradiente, mientras que ventanas más amplias preservan dichas variaciones y solo eliminan las tendencias verticales lentas.
+ 
+ 
+La elección de $v=50$ filas cae en una región amplia de estabilidad del espacio de parámetros: entre $v=25$ y $v=150$ los descriptores de intensidad y gradiente cambian menos del $0.6\%$, y el rango residual del perfil se mantiene en una zona intermedia que evita los dos regímenes patológicos (sobre-corrección por ventana muy pequeña y sub-corrección por ventana muy grande). El valor seleccionado para el pipeline corresponde a $\sim$$5\%$ de las $1024$ filas de la imagen, una escala intermedia coherente con el tamaño típico de los artefactos de barrido observados en el dataset.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{barrido_rloess.pdf}
+    \caption{Comportamiento de la corrección RLOESS al variar el tamaño de la ventana. Paneles: (a) rango del perfil corregido y rango de la tendencia capturada (ambos coinciden por construcción), (b) RMS de las rayas estimadas, (c) cambio porcentual del gradiente medio respecto a $v=50$, (d) cambio porcentual de la desviación estándar de la intensidad respecto a $v=50$. El valor $v=50$ corresponde a la elección del pipeline.}
+    \label{fig:res_barrido_rloess}
+\end{figure}
+
+\subsection{Poda del Esqueleto}
+\label{subsec:poda}
+ 
+El esqueleto del que se derivan la tortuosidad y la longitud de red se obtiene
+con \texttt{bwskel} seguido de una poda de endpoints (\texttt{bwmorph} con la
+operación \texttt{spur}), que el pipeline fija en 5 iteraciones. Para validar
+esta elección se realizó un barrido sobre cinco valores de poda entre 0 y 10
+iteraciones sobre las 81 imágenes del dataset, manteniendo la configuración del
+pipeline fija. Para cada valor se midieron, sobre el esqueleto resultante, los
+dos descriptores que dependen de él ---la tortuosidad media y la longitud de
+red--- junto con el número de píxeles del esqueleto y el número de extremos, que
+cuantifican el efecto mecánico de la poda.
+ 
+\begin{table}[H]
+\centering
+\small
+\caption{Estadísticos del barrido de la poda de endpoints del esqueleto sobre
+las 81 imágenes del dataset. Los valores corresponden a las medias sobre el
+conjunto. La columna ``rama máx'' indica la longitud máxima de rama eliminada,
+igual al número de iteraciones por la resolución ($58{,}6$~nm/px).}
+\label{tab:poda}
+\begin{tabular}{rrrrrr}
+\hline
+Poda     & Rama máx & Tortuosidad & Longitud de red & Esqueleto & Extremos \\
+{[iter]} & [nm]     &             & [µm]            & [px]      &          \\
+\hline
+0  & 0   & 1,539 & 1159,5 & 16\,995 & 579,7 \\
+3  & 176 & 1,519 & 1047,5 & 15\,305 & 549,5 \\
+5  & 293 & 1,506 &  975,1 & 14\,252 & 516,3 \\
+7  & 410 & 1,493 &  908,1 & 13\,282 & 476,2 \\
+10 & 586 & 1,476 &  820,3 & 12\,010 & 407,5 \\
+\hline
+\end{tabular}
+\end{table}
+ 
+La tortuosidad media es prácticamente invariante a la poda: varía menos del
+$2{,}2$\,\% en todo el rango barrido (de $1{,}539$ con el esqueleto sin podar a
+$1{,}476$ con 10 iteraciones). Esto es una propiedad inherente del descriptor:
+al ser el cociente entre el diámetro geodésico y la cuerda de cada componente,
+la eliminación de ramas cortas no altera el camino más largo. La tortuosidad
+confirma que la poda no distorsiona la morfología de la red, pero ---como la
+pendiente residual en la sección anterior--- no es informativa para identificar
+un punto óptimo.
+ 
+La longitud de red y el número de píxeles del esqueleto, en cambio, decrecen de
+forma monótona y sin meseta: la longitud cae alrededor del $3{,}3$\,\% por
+iteración (de 1159 a 820~µm entre poda nula y 10 iteraciones) y el número de
+extremos disminuye de forma sostenida (de 580 a 407). A diferencia del radio del
+cierre, no existe un codo: cada iteración adicional sigue recortando ramas. Este
+comportamiento se explica por la escala de las regiones detectadas.
+ 
+El ancho medio de las regiones de CNT, estimado como el cociente entre el área
+total y la longitud del esqueleto, es del orden de $1$~µm ($\approx$17~px). La
+esqueletización de una región de ancho $W$ genera ramas espurias de borde de
+longitud de hasta $\approx W/2 \approx 510$~nm ($\approx$9~px); por debajo de esa
+escala las ramas corresponden a rugosidad del contorno binario y no a estructura
+física. La ausencia de meseta hasta $\approx$10~px es consistente con una
+distribución continua de espolones que se extiende hasta $\approx W/2$.
+ 
+En conjunto, la elección de 5 iteraciones (ramas de hasta $\approx$293~nm) se
+sitúa dentro del régimen de artefacto, por debajo de $W/2$, y un orden de
+magnitud por debajo de la longitud característica de un CNT ($\approx$2~µm):
+elimina espolones de esqueletonización de forma conservadora, sin erosionar ramas
+reales de la red. Fundamentado en un análisis visual del esqueleto y respaldado en este barrido.
+
+\subsection{Extracción de Descriptores Morfológicos}
+\label{sec:descriptores}
+ 
+A partir de las máscaras binarias y la señal eléctrica corregida, se extrajeron 20 descriptores morfológicos agrupados en seis categorías: distribución espacial, intensidad, morfología, orientación, conectividad y perfil. Cada descriptor se computa por imagen, generando una distribución de 81 valores por descriptor a lo largo del dataset. Esta sección reporta esas distribuciones agrupadas por categoría y describe la forma, mediana y rango de cada una. La definición operacional de cada descriptor se detalla en el Capítulo de Metodología.
+ 
+\subsubsection{Distribución Espacial}
+ 
+Los descriptores CNTD, CNTA y CNTS, propuestos por Castañeda-Uribe y Avila [4], cuantifican respectivamente la uniformidad de espaciados entre regiones de CNTs, la fracción de regiones cuya longitud supera el de un nanotubo individual, y el cociente entre ambos. La Figura~\ref{fig:res_desc_espacial} reporta sus distribuciones sobre las 81 imágenes.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{desc_distribucion.pdf}
+    \caption{Distribuciones de los descriptores de distribución espacial (CNTD, CNTA, CNTS) sobre las 81 imágenes. Las barras corresponden al histograma normalizado y la curva naranja a la estimación de densidad por kernel (KDE).}
+    \label{fig:res_desc_espacial}
+\end{figure}
+ 
+CNTD presenta una distribución asimétrica con mediana 0,092 y rango entre 0,072
+y 0,129. CNTA presenta asimetría hacia valores bajos, con mediana 0,231 y la
+mayoría de los valores entre 0,218 y 0,245. CNTS es el más simétrico de los
+tres, con mediana 2,51, la mayoría de los valores entre 2,26 y 2,75 y rango
+entre 1,36 y 3,57.
+
+\subsubsection{Reproducibilidad de los Descriptores de Distribución Espacial}
+\label{sec:res_reproducibilidad}
+ 
+Los descriptores CNTD, CNTA y CNTS se calculan sobre la máscara binaria, por lo que
+su valor depende del método de binarización. Para evaluar si la dependencia de
+CNTS con el voltaje reportada en [4] se reproduce sobre este dataset, se
+recalcularon los descriptores con tres binarizaciones sobre las mismas imágenes,
+según el procedimiento de la Sección~\ref{sec:met_reproducibilidad}. La
+Figura~\ref{fig:res_reproducibilidad} reporta CNTS en función del voltaje a 10~Hz
+para los tres métodos, junto con los valores publicados en [4].
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{comparacion_cnts.pdf}
+    \caption{CNTS en función del voltaje de fabricación a 10~Hz para las tres
+    binarizaciones (media $\pm$ error estándar sobre las réplicas), comparado con
+    los valores reportados en [4]. El método de [4] solo produce máscaras válidas en
+    31 de las 81 imágenes.}
+    \label{fig:res_reproducibilidad}
+\end{figure}
+ 
+El método de binarización del pipeline produce máscaras válidas en las 81
+imágenes; el método de [4] aplicado a la señal cruda falla en 50 de ellas
+(62\%), al generar máscaras demasiado escasas para ajustar la distribución de
+espaciados. Los valores de CNTS difieren marcadamente entre métodos sobre las
+mismas imágenes. En cuanto a la dependencia con el voltaje a 10~Hz, ninguno de los
+tres métodos reproduce el descenso monótono $2.2 \rightarrow 2.0 \rightarrow 1.7$
+reportado en [4]: el pipeline arroja $2.33 \rightarrow 2.65 \rightarrow 2.58$
+(correlación de Spearman con el voltaje $\rho=-0.01$); el método de [4], sobre las
+imágenes en que es evaluable, $0.08 \rightarrow 0.54 \rightarrow 0.23$
+($\rho=-0.13$); y el umbral de [4] sobre $E_{seg}$, $0.96 \rightarrow 1.09
+\rightarrow 1.86$ ($\rho=+0.16$).
+ 
+\subsubsection{Intensidad}
+ 
+Los descriptores de intensidad se computan sobre la señal eléctrica corregida $E_B$ (canal del segundo armónico, en metros calibrados por el sistema con la sensibilidad del 2.º armónico Amp2InvOLS) restringida a la máscara estricta $M_e$. La Figura~\ref{fig:res_desc_intensidad} muestra sus distribuciones.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{desc_intensidad.pdf}
+    \caption{Distribuciones de los descriptores de intensidad (media, desviación estándar, percentil 90 y gradiente medio) sobre las 81 imágenes. La intensidad media, desviación estándar y percentil 90 están expresadas en picómetros (pm) de amplitud de oscilación del cantilever; el gradiente está expresado en pm/nm, dividido por la resolución espacial $58.6$~nm/px.}
+    \label{fig:res_desc_intensidad}
+\end{figure}
+ 
+La intensidad media presenta una distribución asimétrica con mediana $253$~pm y rango entre $144$ y $619$~pm. La desviación estándar de intensidad tiene una mediana de $24$~pm y cola larga, con casos extremos cercanos a $458$~pm. El percentil 90 de intensidad sigue una distribución similar a la media, con mediana $288$~pm y máximo $1033$~pm. El gradiente medio presenta la mayor concentración en valores bajos, con mediana $0.066$~pm/nm y cola larga hasta $1$~pm/nm.
+ 
+\subsubsection{Morfología}
+ 
+Los descriptores morfológicos se computan sobre los componentes conexos de la máscara morfológica $M_{mor}$. La Figura~\ref{fig:res_desc_morfologia} reporta las distribuciones del área media, su desviación estándar, la elongación media y la tortuosidad media.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{desc_morfologia.pdf}
+    \caption{Distribuciones de los descriptores morfológicos: área media, desviación estándar de área (en $\mu\text{m}^2$), elongación media y tortuosidad media (adimensionales). Áreas calculadas con resolución $58.6$~nm/px.}
+    \label{fig:res_desc_morfologia}
+\end{figure}
+ 
+El área media presenta mediana de $7.64$~$\mu$m$^2$ con rango entre $3.73$ y $15.62$~$\mu$m$^2$. La desviación estándar de área tiene mediana $9.46$~$\mu$m$^2$ y cola larga con un caso atípico de $72.86$~$\mu$m$^2$. La elongación media se concentra cerca de $2.19$ con la mayor parte de los valores entre $2.11$ y $2.28$. La tortuosidad media tiene mediana 1,50 y rango entre 1,25 y 1,80, con una
+distribución concentrada y casi simétrica.
+ 
+\subsubsection{Orientación}
+
+La distribución de la orientación dominante no es uniforme: se concentra en torno a
+los ejes cardinales, con aproximadamente el 65\% de las imágenes a menos de
+$\pm 15^\circ$ de $0^\circ$, $90^\circ$ o $180^\circ$ (Figura~\ref{fig:res_desc_orientacion}). La coherencia es baja en casi todas las muestras, mediana $0.061$ y máximo $0.333$, lo que indica redes
+predominantemente isótropas, sin una dirección colectiva marcada. Igualmente, las imágenes con coherencias mayores si presentan alineaciones claramente marcadas.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{desc_orientacion.pdf}
+    \caption{Distribuciones de los descriptores de orientación. Orientación dominante en grados (variable circular con período $180^{\circ}$, evaluada con KDE circular); coherencia adimensional entre $0$ y $1$ que cuantifica la dispersión angular alrededor del eje dominante.}
+    \label{fig:res_desc_orientacion}
+\end{figure}
+ 
+
+ 
+\subsubsection{Conectividad y Topología}
+ 
+Los descriptores de cobertura total y número de fragmentos coinciden por construcción con la cobertura $M_e$ y el número de componentes reportados en la Tabla~\ref{tab:bin_2b}, por lo que no se reportan nuevamente. La Figura~\ref{fig:res_desc_conectividad} reporta los dos descriptores adicionales: el índice de percolación y la longitud de la red.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{desc_conectividad.pdf}
+    \caption{Distribuciones de los descriptores de conectividad: índice de percolación (fracción del área total que pertenece al clúster mayor) y longitud de la red (longitud total del esqueleto en $\mu$m).}
+    \label{fig:res_desc_conectividad}
+\end{figure}
+ 
+El índice de percolación se concentra en valores bajos con mediana $0.062$ y rango intercuartílico entre $0.049$ y $0.086$, indicando que en la mayoría de las imágenes ningún componente concentra una fracción dominante del área total. La distribución presenta un único caso atípico cercano a $0.51$. La longitud de red tiene mediana 893 µm y rango entre 540 y 2\,269 µm, con cola larga hacia valores altos.
+ 
+\subsubsection{Perfil de Gradiente}
+ 
+Los descriptores de perfil cuantifican la tendencia vertical residual de la señal eléctrica $E_B$ tras la corrección de rayas. La Figura~\ref{fig:res_desc_perfil} reporta la pendiente del ajuste lineal, el RMS del residuo respecto a ese ajuste y el rango total del perfil.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{desc_perfil.pdf}
+    \caption{Distribuciones de los descriptores de perfil. Pendiente del perfil vertical en pm/nm (dividida por la resolución $58.6$~nm/px), RMS del residuo respecto a la tendencia lineal y rango total del perfil, ambos en pm.}
+    \label{fig:res_desc_perfil}
+\end{figure}
+ 
+La pendiente del perfil presenta una distribución centrada cerca de cero (mediana $-7\times 10^{-5}$~pm/nm) con rango entre $-0.0025$ y $0.0019$~pm/nm. El RMS del residuo tiene mediana $5.98$~pm y cola larga hasta $30.84$~pm. El rango del perfil presenta mediana $43.0$~pm y rango entre $9.25$ y $225.76$~pm, reflejando que en algunas imágenes persisten variaciones verticales residuales del orden de cientos de picómetros.
+
+ 
+ 
+\section{Análisis Exploratorio de los Descriptores}
+\label{sec:res_exploratorio}
+ 
+Una vez caracterizadas las distribuciones individuales de los descriptores
+(Sección~\ref{sec:descriptores}), esta sección analiza su comportamiento conjunto: su correlación
+mutua y la dimensionalidad efectiva del espacio que conforman.
+ 
+
+\subsection{Estructura de Correlación y Redundancia}
+\label{sec:res_correlacion}
+ 
+La Figura~\ref{fig:res_correlacion} reporta la matriz de correlación de Pearson
+entre los 20 descriptores, ordenada por similitud para revelar los bloques de
+descriptores redundantes.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{desc_correlacion.pdf}
+    \caption{Matriz de correlación de Pearson entre descriptores, ordenada por
+    agrupamiento jerárquico. Los bloques sobre la diagonal corresponden a familias
+    de descriptores redundantes. Se anotan las correlaciones con $|r|>0.55$.}
+    \label{fig:res_correlacion}
+\end{figure}
+ 
+Se identifican varias familias de descriptores fuertemente correlacionados. La
+familia de intensidad ---intensidad media, desviación estándar, percentil 90 y
+gradiente medio--- presenta correlaciones de hasta $r=1.0$. Un bloque de
+conectividad y morfología agrupa la longitud de red, la cobertura, el índice de
+percolación, la desviación de área y la tortuosidad, con correlaciones entre
+$0.6$ y $0.9$, anticorrelacionado con el número de fragmentos. Los dos descriptores
+de perfil (RMS y rango) correlacionan en $r=0.9$, y la elongación con la coherencia
+en $r=0.6$. Entre los descriptores de distribución espacial, CNTS correlaciona con
+CNTA en $r=0.7$ y con CNTD en $r=-0.8$, consistente con su definición como cociente
+$\mathrm{CNTS}=\mathrm{CNTA}/\mathrm{CNTD}$, por lo que solo dos de los tres son
+independientes.
+ 
+\subsection{Dimensionalidad Efectiva y Selección de Descriptores}
+\label{sec:res_dimensionalidad}
+ 
+La Figura~\ref{fig:res_pca} reporta el análisis de componentes principales sobre
+los 20 descriptores estandarizados.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{desc_pca.pdf}
+    \caption{Análisis de componentes principales de los descriptores. Izquierda:
+    varianza explicada individual y acumulada (la línea roja marca PC$=8$, donde se
+    alcanza el 90\%). Centro y derecha: proyección de las 81 imágenes sobre las dos
+    primeras componentes, coloreadas por frecuencia y por voltaje respectivamente.}
+    \label{fig:res_pca}
+\end{figure}
+ 
+Se requieren ocho componentes principales para explicar el 90\% de la varianza, y
+la dimensionalidad efectiva estimada por el \textit{participation ratio} es de
+$4.9$. Las tres primeras componentes concentran el 66\% de la varianza: PC1 (39\%)
+está dominada por la familia de intensidad y, en sentido opuesto, por la longitud
+de red y el área media; PC2 (16\%) por los descriptores de distribución espacial
+(CNTS, CNTA, CNTD) y el índice de percolación; y PC3 (11\%) por la coherencia, los
+descriptores de perfil y la elongación. En las proyecciones sobre PC1--PC2 las
+imágenes de distinta frecuencia presentan una deriva parcial, mientras que las de
+distinto voltaje aparecen mezcladas.
+ 
+
+ 
+
+

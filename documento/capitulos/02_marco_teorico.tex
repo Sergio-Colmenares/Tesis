@@ -1,0 +1,157 @@
+\chapter{Marco Teórico}
+Este capítulo busca contextualizar al lector en la interdisciplinariedad del trabajo. Se pretende explicar el trasfondo teórico de las diferentes áreas articuladas en el estudio. Se hace un recorrido sobre los componentes y técnicas de cada etapa del proyecto: Una revisión de los polímeros nanocompuestos, un estudio de la técnica de microscopía de fuerza atómica(AFM) usada para la medición del gradiente de capacitancia sobre las muestras, un análisis del procesamiento digital del conjunto de imágenes, la caracterización de los descriptores propuestos, una descripción del SE y parámetros S como variable objetivo del estudio, y finalmente una revisión de los modelos de ML aplicables en el problema.
+
+\section{Polímeros Nanocompuestos}
+Estos tipos de nanocompuestos son materiales fabricados a partir de matrices poliméricas a las que se les agregan diversos tipos de nanorelleno. Este nanorelleno está compuesto por partículas que poseen al menos una dimensión geométrica en el orden de los nanómetros. La mayor ventaja que tienen estos nanocompuestos es que logran combinar las propiedades de la matriz y de las nanopartículas, para que funcionen en conjunto y potencien características que individualmente no se expresan [10]. Esto abre un amplio espacio de posibilidades para sus diferentes configuraciones. Desde enfoques en características eléctricas, o en propiedades mecánicas, químicas, e incluso biomédicas.
+
+Existen gran variedad de nanopartículas que pueden ser usadas en la configuración de estos materiales. Diferentes geometrías, composiciones y propiedades de base. Además de esas diferentes especificaciones iniciales, en el proceso de fabricación también surgen otras características que pueden ser configurables para modificar en mayor o menor medida las propiedades finales del compuesto. Entre ellas están la concentración, dispersión, conectividad, entre muchas otras variables. Precisamente aquí es donde surgen varios de los descriptores propuestos.
+
+Dado que la caracterización se realiza sobre la red de CNTs, es fundamental conocer sus características individuales, que son el fundamento de las características generales de la red. Los nanocompuestos con los que se trabaja en este estudio son SWCNTs, nanotubos de carbono de pared simple formados a partir de grafeno enrollado en forma de cilindro, sobre la matriz de poliimida. El diámetro es de 1 $nm$ típicamente [3], y su longitud en orden de micrómetros. Basado en la interacción del CNT, se puede establecer el comportamiento eléctrico del mismo. Este comportamiento y el del polímero, son los que permiten medir las redes a partir del contraste del gradiente de capacitancia.
+
+\section{Gradiente de Capacitancia: KPFM}
+
+La microscopía de Fuerza Atómica AFM es una técnica de microscopía a nivel nanométrico capaz de realizar mediciones de características topográficas de muestras a partir de la interacción entre su superficie y la punta nanométrica del microscopio. El método consiste en el barrido oscilatorio de la punta sobre la muestra, a medida que recorre las irregularidades de la superficie, el cantiléver presenta deflexiones que provocan que un haz de luz reflejado en la punta se modifique y al captar esas variaciones topográficas, se ajusta la altura para mantener la amplitud de resonancia.
+
+Basado en este método, se han desarrollado variaciones del mismo, capaces de medir otras propiedades de las muestras. La microscopía de Fuerza de Sonda Kelvin de Segundo Armónico añade la medición de características eléctricas. El método específico consiste en 2 pasadas sobre la muestra. La primera obtiene la medición topográfica a partir de la técnica AFM. La segunda pasada, mide la vibración inducida por la interacción eléctrica entre la punta y la muestra generada por una señal de voltaje AC aplicada en la punta, ahora a altura fija sobre la topografía. El segundo armónico de esta vibración es proporcional con el gradiente de capacitancia $\partial C/\partial z$, que contiene la información subsuperficial de la muestra, como describe [5]. Esta medición, como bien se dice, no es infalible, dada la pérdida de definición de los CNTs más profundos, explicada por la difusión de las líneas de campo eléctrico en el trayecto punta-CNT.
+
+\subsubsection{Implicación}
+En números, la detección en profundidad se ve limitada a $\approx 430 nm$ [5]. Conociendo la complejidad geométrica tridimensional de los datos; y por simplicidad del análisis para la extracción de la red de CNTs, esta se considerará coplanar y se proyectarán las estructuras sobre un plano 2D. Se asume que todas las regiones detectadas influyen equitativamente sobre el SE, a pesar de las deformaciones y pérdida de resolución generadas por la detección en profundidad. Esta delimitación se establece reconociendo que pueden existir métodos de reconstrucción tridimensional de la red no usados, pues su implementación queda fuera del alcance de este trabajo.
+
+\section{Procesamiento Digital de Imágenes}
+Después de obtenidos los datos, estos pueden ser visualmente analizados en formato de imagen.  Al hacer una revisión inicial del conjunto de imágenes, se puede concluir que son un grupo heterogéneo que presenta diferenciaciones dadas tanto en sus condiciones de fabricación, como por la adquisición de datos a partir de la técnica de microscopía ya mencionada. Esto último es visualmente claro y denota uno de los problemas principales del estudio. 
+
+La extracción de la red de nanotubos representa una gran dificultad pues se pretende crear un pipeline estándar de procesamiento de imágenes capaz de cubrir todos los casos presentes en un conjunto de este tipo. Esta es una tarea compleja dado que no solo hay que tener en cuenta la variabilidad de los datos en cuanto a distribución de CNTs, especialmente CNTs subsuperficiales, cuyo contraste obtenido por el gradiente de capacitancia los hace matemáticamente indistinguibles del fondo. Sino que se le suma la presencia de múltiples tipos de ruido en los datos obtenidos.
+
+El pipeline debe ser capaz de atacar el ruido presente en cada muestra, evitando modificar la morfología de la red. El desarrollo del mismo debe ser cuidadoso puesto que es un proceso sin ajustes individuales o manuales para un conjunto heterogéneo, buscando la esca labilidad a conjuntos de datos más grandes. Se esperan resultados funcionales de extracción de redes de gradiente $\partial C/\partial z$ a pesar de los parámetros generales aplicados a todas las imágenes. 
+
+El tratamiento que se debe hacer a cada imagen según el ruido presente en la misma debe ser cuidadoso porque el procesamiento es general para todos los datos y no se tiene un ajuste manual por muestra.
+
+Si se cumple con estos dos apartados, tanto la obtención de la red como la minimización del ruido de forma aceptable, se tiene una base sólida para el cálculo de descriptores; en otro caso se podrían ignorar regiones de nanotubos profundos, o que surjan falsos positivos al crear artefactos basados en el ruido, ensuciando los datos que alimentaran al modelo.
+
+\subsection{Caracterización del Ruido}
+Por medio de análisis visual se pudo identificar tres tipos principales de ruido en los datos de microscopía. Estos resultados surgen de un análisis empírico, pero sirven como contextualización de la teoría que respalda el pipeline de limpieza y binarización realizado.
+
+\subsubsection{Crosstalk Topográfico}
+
+Dada la referencia topográfica que sigue la técnica AFM, es posible visualizar en la imagen del gradiente de capacitancia, artefactos superficiales o de ruido inducidos por la medición superficial. Esto es un problema muy presente en el dataset, puesto que hay imágenes eléctricas con relieves y rayones, o peor aún, imágenes eléctricas donde cambios topográficos muy abruptos causan que, en la medición, la punta pierda contacto o presente deflexiones no surgidas del gradiente de capacitancia. Cuando ocurre esto, aparecen regiones donde la información del gradiente es nula o poco confiable. Estos casos son problemáticos puesto que el error del crosstalk está muy presente en el dataset. La gran mayoría de las manchas y rayones encontrados, entre otras manifestaciones de ruido presuntamente aleatorio, son en realidad función sistemática de la presencia de la topografía en el canal eléctrico, inherente a la técnica de microscopía. En resumen, tanto superficie como ruido captado en la señal topográfica se ven introducidos en la señal eléctrica con el agravante de que el gradiente es en mayor magnitud sensible a la distancia [8].
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.35\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{1c-6_sh.png}
+        \includegraphics[width=\textwidth]{0a-5_sh.png}
+    \end{minipage}
+    \begin{minipage}{0.35\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{1c-6_topo.png}
+        \includegraphics[width=\textwidth]{0a-5_topo.png}
+    \end{minipage}
+    \caption{Crosstalk: Imágenes del Canal Eléctrico (Izquierda). Imágenes del Canal Topográfico (Derecha).}
+    \label{fig:comparacion}
+\end{figure}
+
+\subsubsection{Ruido Impulsivo}
+Este tipo de ruido aleatorio se presenta con frecuencia tanto en forma de píxeles con valores extremos (Outliers), como en filas totales o parciales también afectadas por el mismo fenómeno de valores extremos. este tipo de ruido se debe a interferencias mecánicas o eléctricas en la medición [8].
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.35\textwidth]{0a-4_sh.png}
+    \caption{Visualización de Filas, Píxeles y Regiones con Valores Extremos (Zoom).}
+    \label{fig:etiqueta}
+\end{figure}
+\subsubsection{Artefactos de Barrido}
+Los artefactos de Barrido, y otros tipos de ruido sistemático horizontal se presentan debido a la deriva de temperatura, cambios en las propiedades de la punta, en la electrónica de adquisición, o dada la diferencia temporal de escaneo entre filas. Se presenta como variaciones de fondos que no corresponden a la realidad física [8].
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.35\textwidth]{0b-5_sh.png}
+    \caption{Artefactos de Escaneo.}
+    \label{fig:etiqueta}
+    
+\end{figure}
+
+
+\section{Caracterización de Descriptores}
+Los descriptores son herramientas de medición de características sobre la información visual de las muestras, con las cuales se adquieren propiedades relevantes de la red de nanotubos, que serán usados para la predicción de SE a partir de ML. 
+
+A continuación, se definen los grupos de descriptores.
+\subsection{Distribución Espacial}
+La separación entre regiones conductoras dentro de la matriz condiciona la formación de caminos continuos y la fracción de área disponible para reflejar y absorber ondas electromagnéticas. Espaciados uniformes favorecen redes regulares; espaciados desiguales o aglomeraciones generan zonas con concentraciones distintas de portadores [4]. Los descriptores de este grupo cuantifican estas características mediante CNTD, CNTA y CNTS.
+
+\subsection{Intensidad de Gradiente}
+La intensidad del gradiente de capacitancia $\partial C/\partial z$ responde a la densidad local de CNTs y a su proximidad a la superficie [4]. Dado que las ondas electromagnéticas inciden desde la superficie, las regiones con valores altos tienen mayor peso relativo en la reflexión y en la primera capa de absorción [5]. Los descriptores de este grupo cuantifican la magnitud y variabilidad espacial del gradiente sobre la red segmentada.
+
+\subsection{Forma y Morfología}
+La geometría de los segmentos detectados condiciona la respuesta conductora de la red. El área cuantifica el tamaño de cada región conductora local. La elongación caracteriza la forma del agrupamiento, indicando si los CNTs internos tienden a estar alineados o distribuidos de forma isotrópica. La curvatura cuantifica el grado de tortuosidad del agrupamiento, asociado a la interconexión interna de sus CNTs. Estas propiedades modulan la efectividad de los agrupamientos como elementos conductores de la red [1].
+
+\subsection{Orientación}
+La interacción entre una onda electromagnética polarizada y un CNT depende del ángulo entre el eje del nanotubo y el campo eléctrico, por lo que la direccionalidad preferencial de la red modula la respuesta del material [4]. En este trabajo la orientación se mide sobre el esqueleto de los agrupamientos detectados, asumiendo que normalmente la dirección del esqueleto refleja la orientación interna de los CNTs cuando éstos tienden a estar localmente alineados. Los descriptores de este grupo capturan la orientación dominante de la red y el grado de coherencia direccional.
+
+\subsection{Conectividad y Topología}
+La capacidad de un nanocompuesto de apantallar ondas electromagnéticas depende de la formación de caminos conductores continuos. La teoría de percolación establece un umbral crítico de concentración por encima del cual la red se vuelve macroscópicamente conductora [2]. Los descriptores de este grupo cuantifican la fracción ocupada por el clúster mayor, la longitud total de la red y su grado de fragmentación.
+
+\subsection{Perfil de Gradiente}
+En varias imágenes se observa una tendencia global del gradiente a lo largo del eje vertical de barrido, cuyo origen puede ser un artefacto residual del procesamiento o un efecto físico real asociado a la organización en profundidad. Dado que su origen no puede determinarse con la información disponible, los descriptores de este grupo se incluyen como elementos exploratorios.
+
+\section{SE y Parámetros S}
+La eficiencia de apantallamiento electromagnético (SE) es la variable objetivo sobre la cual se busca establecer una relación cuantitativa con los descriptores morfológicos extraídos de las imágenes KPFM. Descrita como la medición de la capacidad de un material de aislar o atenuar señales electromagnéticas normalmente consideradas ruido. 
+Este trabajo parte de los valores de SE ya obtenidos a partir de parámetros S y centra su aporte en la etapa posterior a la adquisición; los detalles de la medición se encuentran descritos en [4].
+
+\subsection{Parámetros S}
+Los parámetros S describen el comportamiento de un material en términos de su respuesta a señales electromagnéticas, esta descripción se basa en ondas incidentes, reflejadas y transmitidas. Específicamente $S_{11}$ cuantifica la fracción de onda incidente reflejada en la interfaz, y $S_{21}$ la fracción transmitida. A partir de sus magnitudes se derivan tres cantidades que describen el apantallamiento [4]:
+
+    $$SE_R = 10 \log_{10}\left(\frac{1}{1 - |S_{11}|^2}\right)$$
+
+$$SE_A = 10 \log_{10}\left(\frac{1 - |S_{11}|^2}{|S_{21}|^2}\right)$$
+
+$$SE_T = SE_R + SE_A$$
+
+$SE_R$ corresponde a la atenuación por reflexión en la superficie; $SE_A$ corresponde a la atenuación por absorción dentro del volumen del material,
+asociada a pérdidas dieléctricas y conductivas; $SE_T$ es la
+atenuación total.
+
+Cada mecanismo responde de forma distinta a la organización de
+los CNTs: la reflexión depende de la conductividad superficial
+(redes percolantes cerca de la superficie), mientras que la
+absorción depende de la densidad de caminos conductores en el
+volumen [1], [12]. En CNT/poliimida, el mecanismo dominante es la absorción [3], [4]. Esta diferenciación motiva a analizar los tres mecanismos por separado contra los descriptores morfológicos.
+
+
+\section{Modelos de ML}
+Con los datos obtenidos a partir de los descriptores y los datos SE, el siguiente paso es su análisis profundo por medio de Machine Learning. 
+
+El Aprendizaje de Máquina es una de las ramas de la Inteligencia Artificial enfocada en el desarrollo de algoritmos capaces de encontrar patrones en los datos. Los modelos suelen clasificarse según la interacción entre las variables de los datos en modelos supervisados, si existe una variable objetivo con resultados predefinidos, o no supervisado, si los modelos analizan conjuntos de datos sin etiquetas.
+
+Los modelos supervisados se usan esencialmente para la resolución de dos tipos específicos de problemas, regresión y clasificación. En este trabajo se aplican diferentes modelos supervisados buscando: 
+
+Un análisis predictivo de la relación entre los descriptores y mediciones de SE usando modelos de regresión y con gran interpretabilidad, con el objetivo de dar interpretación física a las relaciones de los descriptores más influyentes.
+
+Un análisis exploratorio de clasificación intentando detectar patrones en los descriptores que permitan agrupar las muestras a partir de sus características de fabricación. 
+
+\subsection{Interpretabilidad}
+Dado que el objetivo del proyecto es no solo observar cuáles son los descriptores con más peso en los modelos, sino aparte de eso buscar darles una interpretación física válida, es fundamental que los modelos usados presenten siempre gran interpretabilidad.
+Esta característica no es más sino la capacidad de entender cómo y por qué el modelo toma las decisiones que lo llevan a sus diferentes predicciones, atribuyendo de esta forma significado a los pesos asignados a las variables de entrada que justifican los descriptores más influyentes.
+
+
+\subsection{Modelos para Regresión}
+
+\subsubsection{Ridge}
+Modelo de regresión lineal con regularización L2. Penaliza la magnitud cuadrada de los coeficientes, lo que reduce el sobre ajuste cuando hay variables correlacionadas y produce coeficientes estables. Los coeficientes resultantes son directamente interpretables como peso lineal de cada descriptor en la predicción [7].
+
+
+\subsubsection{Lasso} 
+Modelo de regresión lineal con regularización L1. La penalización tiene la propiedad de llevar coeficientes de variables poco informativas exactamente a cero, lo que efectivamente realiza selección de variables. Esta característica es particularmente útil en este trabajo, donde el número de descriptores (20) puede contener variables redundantes o irrelevantes [7].
+
+
+\subsubsection{Random Forest}
+Modelo basado en el promedio de múltiples árboles de decisión, cada uno entrenado con subconjuntos aleatorios de datos y variables. Captura relaciones no lineales e interacciones entre variables que los modelos lineales no pueden representar. Su interpretabilidad se obtiene a través de la importancia de variables y, complementariamente, mediante importancia por permutación [7].
+
+\subsection{Modelos para Clasificación}
+
+\subsubsection{Random Forest Classifier} 
+Variante de clasificación del modelo descrito anteriormente, con la misma estrategia de árboles ensamblados aplicada a etiquetas categóricas. Permite identificar qué descriptores son más relevantes para distinguir entre condiciones de fabricación [7].
+
+\subsubsection{Análisis discriminante lineal (LDA)} 
+Método de clasificación que proyecta el espacio de variables sobre las direcciones que maximizan la separación entre categorías y minimizan la varianza interna de cada una. Asume distribuciones gaussianas con igual covarianza entre clases. Su utilidad principal en este trabajo es de visualización y diagnóstico: permite verificar si las condiciones de fabricación son linealmente separables en el espacio de descriptores [7].
+

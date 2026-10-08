@@ -1,0 +1,86 @@
+\documentclass[12pt,oneside]{report}
+
+% Paquetes necesarios
+\usepackage{times}          % Fuente Times New Roman
+\usepackage{setspace}       % Control de interlineado
+\usepackage[margin=2.5cm]{geometry} % Márgenes de 2.5 cm
+\usepackage{fancyhdr}       % Encabezados y pies de página
+\usepackage{titlesec}       % Control de títulos
+\usepackage{tocloft}        % Control de tabla de contenidos
+\usepackage[spanish]{babel}
+\usepackage{ragged2e}
+\justifying{}
+\usepackage{microtype}
+\usepackage{graphicx}   % para \includegraphics
+\usepackage{float}      % para [H] en figuras y tablas
+\usepackage{booktabs}   % para tablas de mejor calidad (\toprule, \midrule, \bottomrule)
+\usepackage{caption}    % para control de leyendas
+\usepackage{subcaption} % para subfiguras si se necesitan
+\usepackage{amsmath}
+% Configuración de interlineado
+\onehalfspacing
+% Source - https://tex.stackexchange.com/a/73865
+% Posted by alamodey
+% Retrieved 2026-05-26, License - CC BY-SA 2.5
+\usepackage{comment} 
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+
+% Configuración de numeración de páginas
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}     % Número de página centrado abajo
+\setlength{\parindent}{1.27 cm}
+\renewcommand{\headrulewidth}{0 pt}
+\renewcommand{\footrulewidth}{0 pt}
+% Opcional: formato de capítulos y secciones
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering}
+  {\Huge\chaptername\ \thechapter}{20pt}{\Huge}
+
+% Rutas de figuras: las del documento y las generadas por el código
+\graphicspath{{figuras/}{../resultados/figuras/}}
+
+% Documento
+\begin{document}
+
+\input{capitulos/00_portada}
+\input{capitulos/00_resumen}
+
+
+% Tabla de contenidos
+\pagestyle{fancy}
+\tableofcontents
+\newpage
+
+\listoffigures
+\addcontentsline{toc}{chapter}{Lista de Figuras}
+\newpage
+ 
+\listoftables
+\addcontentsline{toc}{chapter}{Lista de Tablas}
+\newpage
+
+% Aquí empieza el contenido principal
+
+
+% Capítulos
+\input{capitulos/01_introduccion}
+\input{capitulos/02_marco_teorico}
+\input{capitulos/03_metodologia}
+\input{capitulos/04_resultados}
+\input{capitulos/05_discusion}
+\input{capitulos/06_agradecimientos}
+\input{capitulos/07_financiacion}
+\input{capitulos/08_conclusiones}
+
+% Bibliografía
+\input{capitulos/09_referencias}
+\end{document}

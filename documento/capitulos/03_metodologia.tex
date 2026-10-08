@@ -1,0 +1,415 @@
+\chapter{Metodología}
+
+Este capítulo describe los procedimientos aplicados sobre el conjunto de imágenes de microscopía empleado en este trabajo. La descripción se organiza en torno a los objetivos específicos registrando la metodología aplicada en aquellos que sea necesaria, con el fin asegurar la claridad y reproducibilidad del proyecto. Estos objetivos son: el procesamiento digital de las imágenes para reducir el ruido y aumentar el contraste de la red de nanotubos respecto a la matriz polimérica, la extracción de descriptores morfológicos físicamente interpretables a partir de las imágenes procesadas y los procedimientos de ML enfocados en la relación SE-descriptores.
+
+\section{Procesamiento Digital de Imágenes}
+Las mediciones de microscopía se almacenan en formato .ibw (Igor Binary Wave), y se analizan en formato de imagen de 1024x1024 pixeles, 60x60 $\mu$m. Estos archivos contienen múltiples canales de información adquiridos durante el escaneo KPFM. En este trabajo se emplean dos canales: el canal eléctrico, que posee las mediciones del gradiente de capacitancia $\partial C/\partial z$, sobre el que se realizan las operaciones, y  el canal topográfico, que recoge las mediciones de variación de altura en la superficie de la muestra, información útil para el proceso descrito a continuación.
+
+\subsection{Corrección de Crosstalk Topográfico}
+
+Como primera etapa se elimina el crosstalk topográfico, una de las componentes de ruido visualmente mas presente del dataset [8]. Esta corrección se aplica antes que cualquier otra operación que pueda alterar la relación entre la imagen eléctrica y la topográfica.
+
+A partir de las señales eléctrica y topográfica adquiridas durante el escaneo, se ajusta un modelo de regresión lineal múltiple de la forma:
+
+\begin{equation}
+E = \beta_0 + \beta_1 T + \beta_2 \frac{\partial T}{\partial x} + \beta_3 \frac{\partial T}{\partial y}
+\label{eq:crosstalk}
+\end{equation}
+
+donde $E$ y $T$ son las señales eléctrica y topográfica normalizadas, y $\partial T/\partial x$ y $\partial T/\partial y$ las variaciones direccionales de la topografía. Los coeficientes $\beta_i$ se calculan por mínimos cuadrados. La aproximación obtenida en (\ref{eq:crosstalk}) se resta a la señal eléctrica normalizada, eliminando las variaciones suaves originadas en la topografía.
+
+\subsection{Filtrado de Ruido Impulsivo}
+
+Para eliminar el ruido impulsivo se emplea un filtro de mediana bidimensional [6] que estima el valor de cada píxel a partir de un kernel definido. La mediana es insensible a los propios outliers, lo que la hace adecuada para esta tarea. Sobre el residuo $R$ obtenido entre la imagen previa $I$ y la posterior al filtro $M$ se estima la desviación típica del ruido mediante un estimador robusto basado en la mediana absoluta:
+
+\begin{equation}
+\sigma = \frac{\mathrm{median}(|R|)}{0.6745}
+\label{eq:mad}
+\end{equation}
+
+Los píxeles cuyo residuo supera $n$ veces dicha estimación se reemplazan por el valor del filtro de mediana:
+
+\begin{equation}
+I(x,y) = M(x,y), |R(x,y)| > n\,\sigma
+\label{eq:impulsivo}
+\end{equation}
+
+El filtro se aplica en dos instancias: justo después de la corrección de crosstalk, con kernel $5\times5$ y umbral $n=3$, para eliminar outliers tipo sal y pimienta (SyP); y después de la corrección de fondo, con kernel $5\times1$ y umbral $n=2$, para eliminar líneas impulsivas horizontales remanentes.
+
+\subsection{Corrección de Fondo y Artefactos de Barrido}
+
+Tras la corrección lineal de crosstalk y la limpieza de outliers, se ajustan las filas para eliminar artefactos horizontales derivados del proceso de barrido del escaneo [8]. Para cada fila se asume que los píxeles de menor intensidad representan el fondo. Se analiza el vector de intensidad $I_i$ de la fila $i$ y se calcula un índice de variabilidad relativa:
+
+\begin{equation}
+\rho_i = \frac{\mathrm{MAD}(I_i)}{P_{95}(I_i) - P_{5}(I_i)}
+\label{eq:rho}
+\end{equation}
+
+donde $P_{95}$ y $P_{5}$ son los percentiles 95 y 5 de la fila. Este índice ajusta de forma adaptativa el percentil de píxeles utilizados para estimar el fondo: las filas más homogéneas emplean un porcentaje mayor, mientras que las menos homogéneas se restringen a los píxeles más oscuros para evitar contaminar la estimación con píxeles brillantes pertenecientes a la red. El percentil se acota entre el 25\% y el 45\%, con lo que se establecen un fondo mínimo y un máximo. La mediana del percentil seleccionado se resta a la fila completa.
+
+Finalmente, se aplica una normalización robusta entre los percentiles 1 y 99 del gradiente para escalar los datos al intervalo $[0,1]$ y estandarizar el contraste de cara a la binarización:
+
+\begin{equation}
+E_{seg} = \max\left(0,\; \min\left(1,\; \frac{E_{clean} - P_{1}}{P_{99} - P_{1}}\right)\right)
+\label{eq:norm}
+\end{equation}
+
+\subsection{Segmentación Multiescala y Binarización}
+
+Esta etapa separa los píxeles pertenecientes a la red de nanotubos del fondo polimérico. Como los CNTs se encuentran a distintas profundidades dentro del polímero, modificando la señal captada por el microscopio, se requiere un método capaz de detectar tanto regiones superficiales como profundas, manteniendo la morfología y la continuidad espacial de la red, especialmente cuando se presentan cambios de profundidad.
+
+La segmentación se construye como una jerarquía inspirada en la coyuntura actual, de tres binarizaciones complementarias: local, global y regional, cuyas máscaras se integran por conjunción.
+
+\subsubsection{Binarización Local}
+
+La instancia local se basa en una umbralización adaptativa con núcleo gaussiano [6]. Para cada píxel se estima el fondo local $\mu_G$ como una convolución entre las intensidades de una ventana de tamaño $n\times n$ y un núcleo gaussiano bidimensional, lo que asigna mayor peso a los vecinos cercanos al píxel central:
+
+\begin{equation}
+\mu_G(x,y) = \sum_{(u,v)\in W} G_{\sigma}(u-x,\, v-y)\, E_{seg}(u,v)
+\label{eq:gauss}
+\end{equation}
+
+Un píxel se clasifica como nanotubo en la mascara binarizada $M_L$ si su intensidad supera la estimación local de fondo ajustada por un parámetro de sensibilidad $\alpha_s$:
+
+\begin{equation}
+M_L(x,y) = 1 \text{ si }E_{seg}(x,y) > \mu_G(x,y)(1-\alpha_s), \text{ $0$ en otro caso}  
+\label{eq:bin_local}
+\end{equation}
+
+El solapamiento entre ventanas de píxeles vecinos asegura la continuidad en la captura de variaciones sutiles del gradiente. Esta binarización aporta alta definición pero introduce falsos positivos derivados de pequeñas variaciones eléctricas en el fondo.
+
+\subsubsection{Binarización Global}
+
+Como complemento, se realiza una binarización global basada en rangos de intensidad mediante una variación del método de Otsu [9] extendida a múltiples clases. Dado que la formulación original de dos clases no captura los distintos grupos de intensidades de CNTs presentes en la imagen, se aplica un análisis multiescala que calcula umbrales óptimos para varias clases con alta varianza entre ellas. La primera clase, asociada al fondo polimérico, se descarta de la máscara resultante $M_G$.
+
+
+\subsubsection{Binarización Regional}
+
+La binarización regional $M_R$ se construye con el mismo principio que la local pero empleando una ventana significativamente mayor. Su función es integrar la interacción entre las escalas global y local, y descartar regiones de ruido que las otras instancias no logran filtrar, especialmente en imágenes con mayor ruido de origen.
+
+\subsubsection{Integración de Máscaras}
+
+Cada binarización ofrece resultados consistentes pese a la heterogeneidad del dataset, pero presenta limitaciones complementarias: la local aporta definición a costa de ruido granular, la global secciona bien las capas de intensidad pero con baja definición, y la regional opera como filtro espacial intermedio. Las tres máscaras se integran mediante una conjunción lógica:
+
+\begin{equation}
+M_{final}(x,y) = M_L(x,y) \,\wedge\, M_G(x,y) \,\wedge\, M_R(x,y)
+\label{eq:bin_final}
+\end{equation}
+
+Solo los píxeles clasificados como red en las tres binarizaciones forman parte de la máscara final. Adicionalmente, se impone una condición de tamaño mínimo por componente conexa, eliminando las regiones cuyo número de píxeles es inferior a un umbral establecido.
+
+La elección de la conjunción de las tres escalas frente a otras alternativas basadas en estas mascaras se valida empíricamente sobre las 81 imágenes del dataset mas adelante.
+
+
+\subsubsection{Activación Local de Respaldo}
+
+Cuando la cobertura de la máscara integrada cae por debajo del 15\%, se sustituye $M_{final}$ por la binarización local $M_L$ con los mismos parámetros del Triple AND. Este mecanismo no introduce un método alternativo con parámetros propios sino que reutiliza el componente local del pipeline. La selección del umbral $0.15$ corresponde a un límite inferior de cobertura observado en el dataset cuando la conjunción opera con normalidad; del conjunto de 81 imágenes, solo una alcanza dicho umbral en la configuración del pipeline, y su comportamiento se discute mas adelante.
+
+\subsection{Representaciones de Trabajo}
+ 
+A partir de la salida del pipeline se construyen cuatro representaciones que sirven como insumo común a los distintos grupos de descriptores: tres máscaras binarias derivadas de la segmentación y una imagen eléctrica en escala original utilizada por los descriptores que requieren valores absolutos del gradiente de capacitancia.
+ 
+\begin{itemize}
+    \item \textbf{Máscara estricta:} Contiene únicamente los píxeles clasificados como parte de red por el pipeline. Se denota $M_{e} = M_{final}$.
+    \item \textbf{Máscara morfológica:} Aplica un cierre morfológico sobre la máscara estricta para unir estructuras y reparar discontinuidades[6]: Se realiza a partir de un elemento estructural circular de radio 3 px. Este radio repara granularidades y recupera continuidades en escalas de aproximadamente 175 nm, suficiente para evitar la sobresegmentacion de regiones profundas sin destruir la morfología de la red.
+    \item \textbf{Esqueleto:} Se obtiene mediante la función \texttt{bwskel} sobre la máscara morfológica, con grosor de 1 px. Posteriormente se aplican cinco iteraciones de poda de pixeles mediante \texttt{bwmorph(\texttt{'spur'}, 5)}, que recortan progresivamente los puntos extremos del esqueleto y eliminan ramas espurias cortas de hasta aproximadamente 5 px, evitando inflar artificialmente los descriptores basados en él.
+    \item \textbf{Imagen eléctrica reconstruida $E_{B}$:} Señal eléctrica en escala original obtenida deshaciendo la normalización aplicada durante la corrección de crosstalk. Se aplica el filtro de eliminación de outliers SyP. Para corregir artefactos de fondo entre filas sin afectar gradientes reales, se construye un perfil vertical 1D con la mediana de cada fila, que se suaviza con la función \texttt{smoothdata} de MATLAB usando \texttt{rloess} en ventanas de 50 filas, lo que preserva la tendencia global de la imagen. La diferencia entre el perfil original y el suavizado, se resta a la fila correspondiente.
+\end{itemize}
+
+\section{Extracción de Descriptores Morfológicos}
+
+Una vez construidas las máscaras que aíslan las regiones de nanotubos, se calculan los descriptores morfológicos propuestos. Por la diversidad de las características medidas, los descriptores se evalúan sobre diferentes representaciones de la red. Los diferentes descriptores se describen a continuación.
+
+
+
+\subsection{Descriptores de Distribución Espacial}
+
+Estos descriptores siguen la metodología propuesta en [4] y se calculan sobre la máscara morfológica simulando un escaneo con líneas aleatorias. La función de distribución de probabilidad (PDF) asociada a las mediciones discretas de espaciados y tamaños se construye mediante el ajuste lognormal de los datos. 
+
+Este ajuste, que surge de la naturaleza de la dispersión del nanorelleno, se establece como condición para la definición del calculo de los próximos descriptores, de la siguiente forma:
+
+\paragraph{CNTD (uniformidad de espaciado).}
+Se seleccionan aleatoriamente 100 líneas de barrido horizontales, con una semilla
+fija. Se mide la longitud de los tramos de polímero entre regiones de CNTs. A partir de la PDF construida con las medidas, se identifica el espaciado más frecuente $\eta$. El descriptor se obtiene integrando el área bajo la PDF en el rango $\eta\pm20\%$:
+
+\begin{equation}
+\mathrm{CNTD} = \int_{0.8\eta}^{1.2\eta} f(s)\, ds
+\label{eq:cntd}
+\end{equation}
+
+donde $f(s)$ es la PDF estimada. Valores altos del descriptor implican redes mas uniformemente espaciadas.
+
+\paragraph{CNTA (aglomeración).} Empleando las mismas líneas, se mide la longitud de los tramos de CNTs y se ajusta su PDF $g(\ell)$. El descriptor corresponde al área bajo la curva por encima de un umbral $\alpha = 2000$~nm, asociado a la longitud aproximada de dos SWCNTs [4]:
+
+\begin{equation}
+\mathrm{CNTA} = \int_{\alpha}^{\infty} g(\ell)\, d\ell
+\label{eq:cnta}
+\end{equation}
+
+En este caso, valores altos implican la tendencia a regiones o aglomeraciones con medidas superiores a 2 CNTs.
+
+\paragraph{CNTS} Cociente entre los descriptores anteriores:
+
+\begin{equation}
+\mathrm{CNTS} = \frac{\mathrm{CNTA}}{\mathrm{CNTD}}
+\label{eq:cnts}
+\end{equation}
+
+Valores altos indican alta aglomeración de CNTs respecto a su uniformidad de espaciado.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{mosaico_espacial.pdf}
+    \caption{Muestreo de líneas para los descriptores de distribución espacial sobre el set 2b (15~V, 1~kHz; réplicas en filas, posiciones en columnas). Sobre la máscara morfológica se trazan líneas de barrido horizontales amarillas; los segmentos verdes marcan los tramos de CNT cuya longitud alimenta CNTA, y los espacios entre ellos los espaciados que alimentan CNTD.}
+    \label{fig:met_espacial}
+\end{figure}
+\subsubsection{Comparación de Binarizaciones para Reproducibilidad}
+\label{sec:met_reproducibilidad}
+ 
+Dado que los descriptores CNTD, CNTA y CNTS se calculan a partir de la máscara
+binaria, su valor depende del método de binarización. Para evaluar si la
+dependencia de CNTS con el voltaje reportada en [4] se reproduce sobre este
+dataset, y si esa reproducción depende del pipeline propio, se recalculan los tres
+descriptores sobre las mismas imágenes con tres binarizaciones, manteniendo
+idénticos la lógica de descriptores y el conjunto de líneas de barrido (semilla
+fija), de modo que la máscara sea la única variable:
+\begin{enumerate}
+    \item \textbf{Pipeline:} la máscara morfológica $M_{mor}$ de este trabajo.
+    \item \textbf{Método de [4]:} escala de grises $\rightarrow$ ecualización
+    adaptativa de histograma (CLAHE) $\rightarrow$ filtro de mediana $\rightarrow$
+    umbral al 75\% del valor máximo, aplicado sobre la señal eléctrica cruda, tal
+    como se describe en [4].
+    \item \textbf{Umbral de [4] controlado:} únicamente el umbral al 75\% del
+    máximo, aplicado sobre la señal preprocesada $E_{seg}$ de este trabajo. Aísla
+    el efecto de la binarización manteniendo fijo el preprocesamiento.
+\end{enumerate}
+Se compara CNTS en función del voltaje a 10~Hz (la única frecuencia comparable
+con [4]) para los tres métodos.
+
+\subsection{Descriptores de Intensidad de Gradiente}
+
+A diferencia de los anteriores, estos descriptores requieren los valores absolutos del gradiente de capacitancia, ya que las regiones de mayor intensidad corresponden a CNTs más superficiales o con mayor densidad local. Por ello se trabaja sobre la imagen eléctrica reconstruida $E_{B}$, evaluando los píxeles correspondientes a la máscara estricta $M_{e}$:
+ 
+\begin{itemize}
+    \item \textbf{Intensidad media:} valor medio del gradiente de capacitancia en los CNTs.
+    \item \textbf{Intensidad STD:} desviación estándar del gradiente de capacitancia en los CNTs.
+    \item \textbf{Intensidad P90:} percentil 90 del gradiente de capacitancia en los CNTs.
+    \item \textbf{Gradiente medio:} magnitud promedio de los cambios píxel a píxel del gradiente de capacitancia, evaluada únicamente sobre los píxeles de la máscara estricta. El cálculo emplea diferencias horizontales y verticales:
+ 
+    \begin{equation}
+    |\nabla E|(x,y) = \sqrt{\left(\frac{\partial E}{\partial x}\right)^{2} + \left(\frac{\partial E}{\partial y}\right)^{2}}
+    \label{eq:gradiente}
+    \end{equation}
+ 
+    La magnitud resultante (variación por píxel) se divide por la resolución espacial ($58.6$ nm/px) para expresarla como una derivada espacial real en pm/nm. Como todas las imágenes comparten la misma resolución, los valores son directamente comparables entre imágenes.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{mosaico_intensidad.pdf}
+    \caption{Señal eléctrica reconstruida $E_B$ (amplitud del 2.º armónico, $\propto \partial C/\partial z$, en pm) para el set 2b. Los valores altos corresponden a CNTs más superficiales o de mayor densidad local.}
+    \label{fig:met_intensidad}
+\end{figure}
+
+
+\subsection{Descriptores de Morfología}
+
+Los píxeles de la máscara morfológica se agrupan en componentes conexas (islas) mediante un análisis de vecindad. Sobre cada componente se ajusta una elipse a la distribución de píxeles usando la función \texttt{regionprops} de MATLAB [6], lo que permite extraer los ejes mayor y menor del agrupamiento.
+
+\begin{itemize}
+    \item \textbf{Área media y STD:} cantidad de píxeles de cada isla escalada por la resolución física, promediadas sobre el conjunto de componentes.
+    \item \textbf{Elongación media:} cociente entre el eje mayor y el eje menor de cada elipse ajustada, promediado sobre las $N$ componentes:
+
+    \begin{equation}
+    \mathrm{Elong} = \frac{1}{N}\sum_{k=1}^{N} \frac{a_{k}}{b_{k}}
+    \label{eq:elong}
+    \end{equation}
+
+    donde $a_{k}$ y $b_{k}$ son los semiejes mayor y menor de la elipse asociada al $k$-ésimo componente.
+\item \textbf{Tortuosidad media:} se calcula sobre el esqueleto morfológico. Por cada componente conexa del esqueleto se identifica el camino más largo entre sus extremos; su longitud de arco se mide como la distancia geodésica a lo largo del esqueleto, con pasos diagonales ponderados $\sqrt{2}$, y la cuerda como la distancia euclidiana directa entre esos extremos. El descriptor promedia el cociente arco/cuerda sobre las M componentes.
+
+    \begin{equation}
+    \tau = \frac{1}{M}\sum_{j=1}^{M} \frac{L_{j}^{(\text{arco})}}{L_{j}^{(\text{cuerda})}}
+    \label{eq:tort}
+    \end{equation}
+
+    Cuantifica cuánto se desvían las estructuras de la red respecto a una trayectoria recta entre sus extremos. Valores cercanos a 1 corresponden a estructuras casi rectas; valores mayores, a estructuras más sinuosas.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{mosaico_forma.pdf}
+    \caption{Componentes conexos de la máscara morfológica del set 2b, coloreados por etiqueta, con las elipses ajustadas mediante \texttt{regionprops} superpuestas sobre los mayores. Los semiejes de cada elipse definen la elongación y el área de cada componente alimenta el área media y su desviación.}
+    \label{fig:met_forma}
+\end{figure}
+
+\subsection{Descriptores de Orientación}
+
+La orientación se evalúa mediante el tensor de estructura calculado sobre la
+máscara segmentada en escala de grises [6]. primero se suaviza la máscara binaria $B$ 
+con un núcleo gaussiano de escala $\sigma_d$, obteniendo un campo en
+escala de grises $G = B * g_{\sigma_d}$ sobre el que el gradiente queda bien
+definido en toda la región de la red. Se calcula entonces el gradiente
+$(G_x, G_y)$ de $G$ y, en cada píxel, los productos $G_x^2$, $G_y^2$ y
+$G_x G_y$; cada producto se promedia con un segundo núcleo gaussiano de escala
+$\sigma_i$ y los resultados se acumulan en un tensor de estructura $J$ de
+$2 \times 2$ cuyas componentes resumen la distribución direccional:
+\begin{equation}
+J =
+\begin{pmatrix}
+\sum G_x^2 & \sum G_x G_y \\
+\sum G_x G_y & \sum G_y^2
+\end{pmatrix}
+\end{equation}
+A partir de $J$ se obtienen dos valores propios $\lambda_1 \ge \lambda_2$. El
+primero captura la dirección de mayor variación de intensidad y el segundo la de
+menor variación. La dirección perpendicular a la de mayor variación corresponde
+a la orientación dominante de las estructuras, por lo que el ángulo obtenido del
+tensor requiere una corrección de $90^\circ$ para representar la dirección real
+de los nanotubos. Las escalas $\sigma_d = 2$~px y $\sigma_i = 8$~px se ajustan
+al grosor de las estructuras de la red.
+
+\textbf{Orientación dominante:} ángulo resultante tras la corrección, expresado
+en el intervalo $[0^\circ, 180^\circ)$.
+
+\textbf{Coherencia:} relación entre la diferencia y la suma de los valores
+propios:
+\begin{equation}
+C = \frac{\lambda_1 - \lambda_2}{\lambda_1 + \lambda_2}
+\end{equation}
+Valores próximos a 1 indican alta alineación direccional, y valores próximos a 0
+una red isótropa. La coherencia delimita además la validez de la orientación
+dominante: en una red casi isótropa no existe una dirección preferente bien
+definida, por lo que la orientación solo es significativa cuando la coherencia
+es apreciable.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{mosaico_orientacion.pdf}
+    \caption{Orientación de la red para las nueve imágenes del set 2b. Cada barra amarilla indica la orientación local de un componente de la red, obtenida del tensor de estructura restringido a ese componente, y la barra roja marca la orientación dominante global de la imagen.}
+    \label{fig:met_orientacion}
+\end{figure}
+\subsection{Descriptores de Conectividad y Topología}
+
+Estos descriptores evalúan la red como un todo para identificar caminos continuos y propiedades globales sobre las distintas máscaras:
+
+\begin{itemize}
+    \item \textbf{Cobertura total:} cociente entre los píxeles de la máscara estricta y los píxeles totales de la imagen.
+    \item \textbf{Índice de percolación:} cociente entre el área del componente conexo más grande de la máscara morfológica y el área total ocupada por todas las componentes:
+
+    \begin{equation}
+    P = \frac{|C_{\max}|}{\sum_{k} |C_{k}|}
+    \label{eq:percolacion}
+    \end{equation}
+
+    Cuantifica la dominancia del clúster mayor sobre la red segmentada (valores cercanos a 1 indican que casi todo el material conductor pertenece a una sola estructura conexa).
+    
+    \item \textbf{Longitud de red:} longitud total recorriendo el esqueleto, sumando los pasos entre píxeles adyacentes (ortogonales con peso 1, diagonales con peso $\sqrt{2}$) y multiplicada por la resolución espacial.
+    \item \textbf{Número de fragmentos:} número de componentes conexas independientes en la máscara morfológica.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{mosaico_conectividad.pdf}
+    \caption{Análisis de conectividad sobre el set 2b: el componente conexo de mayor área se resalta en rojo (base del índice de percolación) y el esqueleto podado se superpone en verde (base de la longitud de red).}
+    \label{fig:met_conectividad}
+\end{figure}
+
+ \subsection{Descriptores de Perfil de Gradiente}
+ 
+Este grupo analiza tendencias verticales sobre la imagen eléctrica reconstruida $E_{B}$. Para cada fila se calcula la mediana de intensidad, generando un perfil vertical 1D. Sobre este perfil se ajusta una recta $\hat{p}_{i} = m\,i + b$ por mínimos cuadrados, a partir de la cual se evalúan:
+ 
+\begin{itemize}
+    \item \textbf{Tendencia:} pendiente $m$ del ajuste lineal del perfil respecto al índice de fila. El coeficiente del ajuste (en pm por fila, es decir por píxel) se divide por la resolución espacial ($58.6 $ nm/px) para expresar la pendiente como una derivada vertical real en pm/nm, comparable entre imágenes
+    \item \textbf{ Rango:} diferencia entre los valores máximo y mínimo del perfil.
+\item \textbf{Ruido RMS horizontal:} desviación cuadrática media del perfil respecto a la recta de tendencia.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{mosaico_perfil.pdf}
+    \caption{Perfil vertical de $E_B$ (mediana por fila, en pm) y su ajuste lineal para las nueve imágenes del set 2b. La pendiente del ajuste define la tendencia y la dispersión respecto a la recta el RMS del residuo.}
+    \label{fig:met_perfil}
+\end{figure}
+
+
+\section{Análisis de Datos y Aprendizaje Automático}
+ 
+A partir de los 20 descriptores extraídos por imagen se construye una matriz de
+$81 \times 20$ que constituye el insumo del análisis. Este se organiza en dos
+etapas. La primera es un análisis exploratorio no supervisado que caracteriza la estructura interna del espacio de descriptores y su redundancia. La segunda corresponde a los modelos supervisados:
+el análisis predictivo de regresión hacia la eficacia de apantallamiento (SE),
+que constituye el objetivo central del trabajo.
+ 
+\subsection{Análisis Exploratorio de Descriptores}
+\label{sec:met_exploratorio}
+ 
+Cada descriptor genera una distribución de 81 valores sobre el dataset. Sobre la
+matriz estandarizada (media cero, varianza unitaria) se aplican dos
+herramientas complementarias.
+ 
+\paragraph{Estructura de correlación.} Se calcula la matriz de correlación de
+Pearson entre los 20 descriptores. Para identificar grupos de descriptores
+redundantes se aplica un agrupamiento jerárquico de enlace promedio sobre la
+distancia $d_{ij}=1-|r_{ij}|$, que une descriptores fuertemente correlacionados
+(en cualquier signo) en familias.
+ 
+\paragraph{Dimensionalidad efectiva.} Mediante análisis de componentes
+principales (PCA) se cuantifica la dimensionalidad real del espacio. Se reporta
+la varianza explicada acumulada y la dimensionalidad efectiva mediante el
+\textit{participation ratio} $\mathrm{PR}=\left(\sum_i \lambda_i\right)^2 / \sum_i \lambda_i^2$,
+donde $\lambda_i$ son los valores propios de la matriz de covarianza. PR estima
+el número de direcciones que concentran la varianza con independencia de cuántos
+descriptores se midan.
+
+\begin{comment}
+\section{Machine Learning}
+A partir de los datos de fabricación, mediciones de descriptores y valores de SE, se construyen los datos que se van a usar en los diferentes procesos de Machine Learning.
+
+\subsection{Dataset ML}
+\subsubsection{Datos para Regresión}
+Este análisis se realiza sobre la unidad de medición de las propiedades de SE. Estas mediciones generalmente pueden hacerse de la siguiente forma:
+\begin{itemize}
+    \item Medición de SE por grupo de fabricación (9 Datos).
+\item Medición de SE por Réplica  (27 Datos).
+\item Medición de SE por Muestra (81 Datos).
+\end{itemize}
+Dependiendo de esta magnitud se deben hacer transformaciones en el dataset los descriptores medidos, puesto que en ese caso si se realiza una extracción de descriptores a cada imagen (81 datos por cada descriptor). En caso de que los valores de SE sean por réplica  o por grupo de fabricación, se harán simplificaciones en los subconjuntos, tomando valores representativos de los mismos; como por ejemplo la mediana de cada descriptor para igualar el número de datos de SE y eliminar problemas de dependencia.
+
+Al momento no se ha desarrollado, así que este análisis queda planteado, pero sigue como trabajo en progreso.
+
+\subsubsection{Datos para Clasificación}
+Se obtendrán 20 descriptores, junto a los datos de las características de fabricación, extraídos individualmente de las 81 imágenes. Esto nos deja con un problema de clasificación de 9 clases Voltaje-Frecuencia. Las 81 imágenes no son estadísticamente independientes entre sí, dado que las tres imágenes de una misma réplica provienen del mismo espécimen físico. Por ello, para evitar problemas con la asignación aleatoria de las imágenes en el modelo, que puedan llevar a la separación de muestras de una misma réplica, se usara GroupKFold, asegurando que permanezcan en conjunto. Finalmente se aclara la ejecución de estandarización de las variables.
+
+\subsection{Pipeline de Clasificación Exploratoria}
+Su implementación se realiza en Matlab y comprende GroupKFold, los modelos, métricas de evaluación y Análisis de interpretabilidad.
+
+\subsubsection{Estrategia de Validación}
+ La validación cruzada se realiza mediante GroupKFold agrupando por réplica. El dataset cuenta con 27 réplicas (3 réplicas × 9 condiciones) que se distribuyen en K = 3 folds, asignando 9 réplicas a cada fold. En cada iteración, dos folds (54 imágenes correspondientes a 18 réplicas) se utilizan para entrenamiento y un fold (27 imágenes correspondientes a 9 réplicas) para prueba. Las métricas reportadas corresponden al promedio sobre los tres folds.
+
+ Para el desempeño del modelo se usan las siguientes métricas:
+
+ \begin{itemize}
+     \item Accuracy: Porcentaje de imágenes correctamente clasificadas.
+     \item F1 Macro: Media armónica de precisión y recall, promediada por clase sin ponderar. Permite detectar si el modelo tiene desempeño desigual entre clases.
+     \item Matriz de Confusión: Representación visual de aciertos y errores entre cada par de clases. Su utilidad en este análisis es identificar qué condiciones V×f resultan más confundibles entre si.
+ \end{itemize}
+
+ \subsubsection{Modelos}
+ Para el análisis clasificatorio se desarrollan los siguientes modelos: Random Forest Classifier y Análisis Discriminante Lineal (LDA). En este caso, y al ser un análisis exploratorio, se establecen los parámetros por defecto de Matlab en los modelos. Esto derivado del reducido tamaño del dataset, y de no tener la intención de producir un sistema predictivo ideal, sino de simplemente analizar cómo se comportan los descriptores frente a los parámetros de fabricación.
+
+ Para Random Forest se utiliza la función TreeBagger de MATLAB con 100 árboles, valor que ofrece estabilidad estadística sin coste computacional excesivo en datasets pequeños. LDA se entrena directamente con fitcdiscr sin parámetros especiales, dado que el método tiene formulación cerrada y no requiere tuning relevante.
+ 
+ \subsubsection{Interpretabilidad}
+ La interpretabilidad del modelo frente a los descriptores esta dada por diferentes métricas:
+ 
+ Importancia de variables del Random Forest: Cada árbol del bosque contribuye con una medida de cuánto reduce cada descriptor el error de clasificación a lo largo de los splits en los que se utiliza. La importancia agregada del bosque se calcula promediando estas contribuciones sobre los 100 árboles.
+
+ Importancia por permutación: Para cada descriptor, se mide la pérdida de exactitud del modelo cuando los valores de ese descriptor se permutan aleatoriamente entre las observaciones del fold de prueba. Una caída grande indica que el descriptor era relevante; una caída nula indica que el modelo no dependía de él [7]. Esta medida es agnóstica al tipo de modelo y se aplica tanto a Random Forest como a LDA, permitiendo comparar la importancia atribuida a cada descriptor por modelos de naturalezas distintas.
+
+ Coeficientes lineales del LDA: La matriz de proyección del LDA asigna pesos a cada descriptor para construir las direcciones de máxima separación entre clases. Aunque el LDA proyecta sobre múltiples direcciones discriminantes, la primera dirección (asociada al mayor valor propio) concentra la información de mayor varianza entre clases y permite identificar qué descriptores dominan dicha separación.
+
+ Los rankings de importancia obtenidos por estas tres rutas se contrastarán entre sí. La concordancia entre ellos es indicio de relevancia robusta de un descriptor; la divergencia indica que el papel de ese descriptor depende del tipo de modelo y debe interpretarse con cuidado.
+ 
+\end{comment}
+
