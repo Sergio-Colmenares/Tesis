@@ -13,7 +13,7 @@ Leyenda: ✅ coincide · ⚠️ coincide pero el documento debe precisarlo · �
 
 | # | Etapa | Problema | Qué cambiar |
 |---|---|---|---|
-| 1 | Binarización local/regional | La ecuación (3.x) `E > μ_G(1−α_s)` no es lo que hace `adaptthresh`. Con sensibilidad 0.55 la ecuación del documento da umbral 0.45·μ_G; `adaptthresh` (polaridad `bright`) escala la media local por `0.6 + (1 − s)` = **1.05·μ_G** | Verificar en MATLAB y corregir la ecuación del documento |
+| 1 | Binarización local/regional | La ecuación (3.x) `E > μ_G(1−α_s)` no es lo que hace `adaptthresh`. Con sensibilidad 0.55 la ecuación del documento da umbral 0.45·μ_G; `adaptthresh` (polaridad `bright`) escala la media local por `0.6 + (1 − s)` = **1.05·μ_G** (✅ confirmado en MATLAB: umbral 0.525 sobre imagen constante 0.5) | Corregir la ecuación del documento: $E_{seg} > (1.6 - s)\,\mu_G$ |
 | 2 | Otsu multiclase | `multithresh(Eseg, 6)` devuelve **6 umbrales → 7 clases**. El documento y resultados dicen «6 clases en Otsu» | Decir «6 umbrales (7 clases)», o usar `multithresh(Eseg,5)` si la intención eran 6 clases (cambia resultados) |
 | 3 | Corrección de fondo | El percentil adaptativo real es `p = 40 − 20ρ`, acotado a [25, 45]. Como ρ ≥ 0, **p nunca supera 40** y en la práctica queda entre ~32 % y ~39 %; las cotas 25/45 nunca se activan. Además p no crece con la homogeneidad como dice el texto (una fila gaussiana da ~36 %, una fila con 20 % de CNTs da ~38 %) | Escribir la fórmula real en el documento y describir el rango efectivo, o rediseñar la regla si la intención era otra |
 | 4 | Perfil de gradiente | Por construcción, el perfil (mediana por fila) de `E_B` **es exactamente la tendencia RLOESS**: `E_B` se obtiene restando a cada fila `perfil − tendencia`. «Ruido RMS horizontal» no mide ruido, mide cuánto se aparta la tendencia suavizada de una recta | Decirlo explícitamente en 3.2.6 y renombrar el descriptor (p. ej. «no linealidad del perfil») |
@@ -54,7 +54,7 @@ Idéntica a la ecuación del documento (recorte a [0, 1]).
 
 ### 3.1.4 Binarización
 - **Local** (21 px) y **regional** (51 px), estadístico gaussiano, sensibilidad 0.55 ✅ en parámetros.
-  - ❌ Ver discrepancia #1. **Verificar en MATLAB:**
+  - ❌ Ver discrepancia #1. **Confirmado en MATLAB** (`ans = 0.5250`):
     ```matlab
     T = adaptthresh(0.5*ones(64), 0.55, 'Statistic','gaussian', 'ForegroundPolarity','bright');
     T(32,32)   % 0.525 → factor 1.05 = 0.6+(1−s);  0.225 → factor (1−s) como dice el documento

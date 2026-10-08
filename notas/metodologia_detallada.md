@@ -248,7 +248,7 @@ Ambas usan umbralización adaptativa con estadístico gaussiano (`adaptthresh` +
    \tau(i,j) = \min\!\big(1,\ \gamma(s)\,\mu_G(i,j)\big), \qquad \gamma(s) = 0.6 + (1 - s).
    $$
 
-   Con $s = 0.55$: $\gamma = 1.05$ **[verificar en MATLAB]**. Prueba:
+   Con $s = 0.55$: $\gamma = 1.05$ (**confirmado en MATLAB**: la prueba siguiente devuelve `0.5250`):
    ```matlab
    T = adaptthresh(0.5*ones(64),0.55,'Statistic','gaussian','ForegroundPolarity','bright');
    T(32,32)   % 0.525 confirma γ = 1.05
@@ -311,7 +311,7 @@ Así se explica el nombre: a mayor sensibilidad, menos contraste se exige y se d
 **Consecuencias:**
 - **Corrección para la tesis**: reemplazar la ecuación por $M_L(i,j) = 1$ si $E_{seg}(i,j) > \big(1.6 - s\big)\,\mu_G(i,j)$, y explicar que con $s = 0.55$ el criterio equivale a un contraste local mínimo del 5 %.
 - **Limitación a mencionar**: el criterio es relativo. En zonas oscuras ($\mu_G$ pequeño), un 5 % es una diferencia absoluta mínima y el ruido la supera con facilidad. Esa es la "fragmentación granular en el fondo" que muestra $M_L$, y la razón para intersecarla con $M_G$, que usa un umbral absoluto, y con $M_R$, que usa un vecindario más amplio.
-- **Pendiente de confirmar**: la relación $\gamma(s) = 0.6 + (1-s)$ corresponde a la implementación de `adaptthresh` en MATLAB. Confírmala con la prueba de arriba (debe dar 0.525) o leyendo la línea de escalado en `edit adaptthresh`.
+- **Confirmado**: sobre una imagen constante de valor 0.5, `adaptthresh` con $s=0.55$ devuelve un umbral de $0.525 = 1.05 \times 0.5$, lo que confirma $\gamma(s) = 0.6 + (1-s)$.
 
 | Máscara | Ventana | Papel |
 |---|---|---|
