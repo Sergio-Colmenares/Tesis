@@ -31,8 +31,8 @@ función de toolbox que no se pudo ejecutar al redactar esto.
 Estadísticos robustos usados a lo largo del pipeline, para un conjunto de valores $\{x\}$:
 
 $$
-\operatorname{med}(x) = \text{mediana}, \qquad
-\operatorname{MAD}(x) = \operatorname{med}\big(|x - \operatorname{med}(x)|\big), \qquad
+\mathrm{med}(x) = \text{mediana}, \qquad
+\mathrm{MAD}(x) = \mathrm{med}\big(|x - \mathrm{med}(x)|\big), \qquad
 P_q(x) = \text{percentil } q.
 $$
 
@@ -69,9 +69,9 @@ Con la imagen $n \in \{1,\dots,9\}$: réplica $= \lceil n/3 \rceil$, posición $
 Ambos canales se llevan a una escala adimensional comparable:
 
 $$
-\tilde E = \frac{E_{raw} - \operatorname{med}(E_{raw})}{\operatorname{MAD}(E_{raw})},
+\tilde E = \frac{E_{raw} - \mathrm{med}(E_{raw})}{\mathrm{MAD}(E_{raw})},
 \qquad
-\tilde T = \frac{T_{raw} - \operatorname{med}(T_{raw})}{\operatorname{MAD}(T_{raw})}.
+\tilde T = \frac{T_{raw} - \mathrm{med}(T_{raw})}{\mathrm{MAD}(T_{raw})}.
 $$
 
 Se usan la mediana y la MAD en lugar de media y desviación estándar porque no se ven
@@ -93,10 +93,10 @@ $$
 \tilde E(i,j) = \beta_0 + \beta_1 \tilde T(i,j) + \beta_2 \frac{\partial \tilde T}{\partial x}(i,j) + \beta_3 \frac{\partial \tilde T}{\partial y}(i,j) + \varepsilon(i,j).
 $$
 
-Apilando los $N^2$ píxeles como filas, $\mathbf{e} = \operatorname{vec}(\tilde E) \in \mathbb{R}^{N^2}$ y
+Apilando los $N^2$ píxeles como filas, $\mathbf{e} = \mathrm{vec}(\tilde E) \in \mathbb{R}^{N^2}$ y
 
 $$
-\mathbf{X} = \Big[\ \operatorname{vec}(\tilde T)\ \ \ \operatorname{vec}(\partial_x \tilde T)\ \ \ \operatorname{vec}(\partial_y \tilde T)\ \ \ \mathbf{1}\ \Big] \in \mathbb{R}^{N^2 \times 4},
+\mathbf{X} = \Big[\ \mathrm{vec}(\tilde T)\ \ \ \mathrm{vec}(\partial_x \tilde T)\ \ \ \mathrm{vec}(\partial_y \tilde T)\ \ \ \mathbf{1}\ \Big] \in \mathbb{R}^{N^2 \times 4},
 $$
 
 los coeficientes se obtienen por mínimos cuadrados ordinarios:
@@ -120,7 +120,7 @@ Lo que se resta es un mapa completo, distinto en cada píxel, no una constante g
 Por construcción de mínimos cuadrados, el residuo es ortogonal a cada columna de $\mathbf{X}$:
 
 $$
-\mathbf{X}^\top \operatorname{vec}(E_{corr}) = \mathbf{0}.
+\mathbf{X}^\top \mathrm{vec}(E_{corr}) = \mathbf{0}.
 $$
 
 Como $\mathbf{X}$ incluye la columna de unos, $E_{corr}$ tiene media cero y **covarianza (y correlación de Pearson) exactamente nula** con $\tilde T$, $\partial_x \tilde T$ y $\partial_y \tilde T$. Por eso la correlación eléctrico–topográfica posterior a la corrección es $\approx 10^{-16}$, es decir, cero numérico. Para mostrar el efecto de la corrección conviene reportar:
@@ -137,7 +137,7 @@ Para una imagen $I$ y una ventana $k_1 \times k_2$:
 1. **Filtro de mediana** (MATLAB `medfilt2`, relleno de ceros en el borde):
 
    $$
-   M(i,j) = \operatorname{med}\{ I(u,v) : (u,v) \in W_{k_1 \times k_2}(i,j) \}.
+   M(i,j) = \mathrm{med}\{ I(u,v) : (u,v) \in W_{k_1 \times k_2}(i,j) \}.
    $$
 
 2. **Residuo absoluto**: $R(i,j) = |I(i,j) - M(i,j)|$.
@@ -145,7 +145,7 @@ Para una imagen $I$ y una ventana $k_1 \times k_2$:
 3. **Estimación robusta del nivel de ruido**:
 
    $$
-   \hat\sigma = \frac{\operatorname{med}(R)}{0.6745}.
+   \hat\sigma = \frac{\mathrm{med}(R)}{0.6745}.
    $$
 
    Justificación: si el residuo de un píxel normal sigue una distribución $\mathcal N(0,\sigma^2)$, entonces $|R|$ tiene mediana $\Phi^{-1}(0.75)\,\sigma = 0.6745\,\sigma$, donde $\Phi$ es la función de distribución normal estándar. Dividir entre 0.6745 da un estimador consistente de $\sigma$. Como la mediana ignora hasta el 50 % de valores anómalos, los propios *outliers* no inflan la estimación.
@@ -179,7 +179,7 @@ Se aplica a $E_1$ (salida de SyP 1) y elimina el desplazamiento de nivel de cada
 1. **Variabilidad relativa**:
 
    $$
-   \rho_i = \frac{\operatorname{MAD}(I_i)}{P_{95}(I_i) - P_5(I_i)}.
+   \rho_i = \frac{\mathrm{MAD}(I_i)}{P_{95}(I_i) - P_5(I_i)}.
    $$
 
 2. **Percentil adaptativo**:
@@ -191,7 +191,7 @@ Se aplica a $E_1$ (salida de SyP 1) y elimina el desplazamiento de nivel de cada
 3. **Nivel de fondo**: mediana de los píxeles por debajo del percentil $p_i$:
 
    $$
-   b_i = \operatorname{med}\{ I_i(j) : I_i(j) \le P_{p_i}(I_i) \}.
+   b_i = \mathrm{med}\{ I_i(j) : I_i(j) \le P_{p_i}(I_i) \}.
    $$
 
 4. **Sustracción**: $E_{fondo}(i,j) = I_i(j) - b_i$.
@@ -262,6 +262,57 @@ Ambas usan umbralización adaptativa con estadístico gaussiano (`adaptthresh` +
 
    Es decir, un píxel es CNT si su intensidad supera en un 5 % la media gaussiana de su vecindad. Mayor sensibilidad $s$ significa menor $\gamma$, umbral más bajo y más píxeles clasificados como CNT.
 
+#### Qué significa el factor $\gamma = 1.05$
+
+**La idea.** La binarización adaptativa no compara cada píxel con un umbral fijo, sino con **su propio vecindario**. Primero calcula $\mu_G(i,j)$, el brillo "típico" alrededor del píxel. Luego exige que el píxel sea más brillante que ese valor típico multiplicado por un factor $\gamma$:
+
+$$
+E_{seg}(i,j) > \gamma\,\mu_G(i,j) \quad\Longleftrightarrow\quad \frac{E_{seg}(i,j)}{\mu_G(i,j)} > \gamma .
+$$
+
+El criterio es un **contraste relativo**: el cociente entre el píxel y su vecindario.
+
+| $\gamma$ | Exigencia | Efecto |
+|---|---|---|
+| $> 1$ | el píxel debe ser **más brillante** que su vecindario | solo se marcan picos locales |
+| $= 1$ | basta con superar el promedio local | aproximadamente la mitad de cada vecindario queda marcada |
+| $< 1$ | basta con no ser mucho **más oscuro** que el vecindario | casi todo queda marcado, incluido el fondo |
+
+**De dónde sale 1.05.** MATLAB no recibe $\gamma$ directamente, sino la *sensibilidad* $s \in [0,1]$, y la convierte con $\gamma(s) = 0.6 + (1 - s)$:
+
+| $s$ | $\gamma$ | Interpretación |
+|---|---|---|
+| 0.0 | 1.60 | el píxel debe superar en 60 % a su vecindario |
+| 0.3 | 1.30 | +30 % |
+| 0.5 (valor por defecto de MATLAB) | 1.10 | +10 % |
+| **0.55 (tesis)** | **1.05** | **+5 %** |
+| 0.6 | 1.00 | igual al promedio |
+| 0.8 | 0.80 | puede ser hasta 20 % más oscuro |
+| 1.0 | 0.60 | puede ser hasta 40 % más oscuro |
+
+Así se explica el nombre: a mayor sensibilidad, menos contraste se exige y se detectan más píxeles (incluidos CNTs profundos de bajo contraste, pero también más ruido de fondo).
+
+**Ejemplo numérico** con $s = 0.55$, en una zona de fondo con $\mu_G = 0.20$, de modo que el umbral es $1.05 \times 0.20 = 0.21$:
+
+| Píxel | $E_{seg}$ | ¿Supera 0.21? | Resultado |
+|---|---|---|---|
+| fondo polimérico | 0.19 | no | fondo ✔ |
+| fondo con ruido | 0.205 | no | fondo ✔ |
+| CNT profundo (contraste débil) | 0.24 | sí (+20 %) | CNT ✔ |
+| CNT superficial | 0.60 | sí | CNT ✔ |
+
+**Por qué el documento actual da otro resultado.** La tesis escribe el criterio como $E_{seg} > \mu_G(1 - \alpha_s)$. Con $\alpha_s = 0.55$ eso es $E_{seg} > 0.45\,\mu_G$, es decir $\gamma = 0.45$. En el ejemplo, el umbral sería $0.09$ y **los cuatro píxeles, incluido el fondo, saldrían como CNT**: un píxel solo sería fondo si fuera menos de la mitad de brillante que su vecindario. No es lo que hace el código.
+
+**Evidencia en tus propios resultados.** En la validación de parámetros (Cap. 4) la cobertura pasa de 11.5 % con $s = 0.3$ a 45.2 % con $s = 0.8$:
+
+- Con la fórmula del documento, $s = 0.3$ daría $\gamma = 0.7$: casi todo el fondo pasaría el umbral local y la cobertura no podría ser tan baja.
+- Con $\gamma(s) = 0.6 + (1-s)$, $s = 0.3$ da $\gamma = 1.3$ (exigir +30 %, cobertura baja) y $s = 0.8$ da $\gamma = 0.8$ (cobertura alta). Esto coincide con lo observado.
+
+**Consecuencias:**
+- **Corrección para la tesis**: reemplazar la ecuación por $M_L(i,j) = 1$ si $E_{seg}(i,j) > \big(1.6 - s\big)\,\mu_G(i,j)$, y explicar que con $s = 0.55$ el criterio equivale a un contraste local mínimo del 5 %.
+- **Limitación a mencionar**: el criterio es relativo. En zonas oscuras ($\mu_G$ pequeño), un 5 % es una diferencia absoluta mínima y el ruido la supera con facilidad. Esa es la "fragmentación granular en el fondo" que muestra $M_L$, y la razón para intersecarla con $M_G$, que usa un umbral absoluto, y con $M_R$, que usa un vecindario más amplio.
+- **Pendiente de confirmar**: la relación $\gamma(s) = 0.6 + (1-s)$ corresponde a la implementación de `adaptthresh` en MATLAB. Confírmala con la prueba de arriba (debe dar 0.525) o leyendo la línea de escalado en `edit adaptthresh`.
+
 | Máscara | Ventana | Papel |
 |---|---|---|
 | $M_L$ | $21 \times 21$ px ($\approx 1.2\ \mu$m) | detalle fino; sigue variaciones sutiles, pero genera falsos positivos granulares en el fondo |
@@ -318,7 +369,7 @@ La dilatación $\oplus$ une regiones separadas por huecos de hasta $\approx 2r$ 
 
 ### 7.3 Esqueleto $S$
 $$
-S = \operatorname{spur}^{(5)}\big(\operatorname{skel}(M_{mor})\big).
+S = \mathrm{spur}^{(5)}\big(\mathrm{skel}(M_{mor})\big).
 $$
 
 `bwskel` adelgaza cada componente hasta una línea de 1 px que conserva su topología (eje medial). `bwmorph(·,'spur',5)` elimina 5 veces seguidas los píxeles extremos (píxeles con un solo vecino), lo que borra ramas espurias de hasta $\approx 5$ px. Esas ramas aparecen al esqueletizar bordes irregulares.
@@ -326,17 +377,17 @@ $$
 ### 7.4 Imagen eléctrica reconstruida $E_B$
 Es la señal en unidades físicas para los descriptores de intensidad y de perfil.
 
-1. **Deshacer la normalización conservando la corrección**: como $E_{corr} = (E_{raw} - \operatorname{med})/\operatorname{MAD} - \hat E_T$, multiplicando por la MAD y sumando la mediana:
+1. **Deshacer la normalización conservando la corrección**: como $E_{corr} = (E_{raw} - \mathrm{med})/\mathrm{MAD} - \hat E_T$, multiplicando por la MAD y sumando la mediana:
 
    $$
-   E_{corr,B} = E_{raw} - \operatorname{MAD}(E_{raw})\,\hat E_T \quad [\text{m}].
+   E_{corr,B} = E_{raw} - \mathrm{MAD}(E_{raw})\,\hat E_T \quad [\text{m}].
    $$
 
 2. **SyP $5\times5$, $n = 3$** → $E_{syp}$.
 
-3. **Perfil vertical**: $p(i) = \operatorname{med}_j\, E_{syp}(i,j)$.
+3. **Perfil vertical**: $p(i) = \mathrm{med}_j\, E_{syp}(i,j)$.
 
-4. **Tendencia RLOESS**: $\tilde p = \operatorname{rloess}_w(p)$, con $w = 50$ filas. En cada ventana de 50 filas se ajusta una parábola por mínimos cuadrados ponderados: los pesos tricúbicos $W(d) = (1 - |d|^3)^3$ privilegian las filas cercanas al centro. Luego el ajuste se repite con pesos de robustez *bisquare* calculados de los residuos, de modo que los saltos abruptos entre filas no arrastren la tendencia.
+4. **Tendencia RLOESS**: $\tilde p = \mathrm{rloess}_w(p)$, con $w = 50$ filas. En cada ventana de 50 filas se ajusta una parábola por mínimos cuadrados ponderados: los pesos tricúbicos $W(d) = (1 - |d|^3)^3$ privilegian las filas cercanas al centro. Luego el ajuste se repite con pesos de robustez *bisquare* calculados de los residuos, de modo que los saltos abruptos entre filas no arrastren la tendencia.
 
 5. **Rayas**: $\delta(i) = p(i) - \tilde p(i)$, la componente de alta frecuencia fila a fila.
 
@@ -351,7 +402,7 @@ $E_B$ no pasa por la corrección de fondo (sección 4) ni por la normalización.
 **Consecuencia:** como restar una constante a una fila desplaza su mediana en esa misma constante,
 
 $$
-\operatorname{med}_j E_B(i,j) = p(i) - \delta(i) = \tilde p(i).
+\mathrm{med}_j E_B(i,j) = p(i) - \delta(i) = \tilde p(i).
 $$
 
 El perfil vertical de $E_B$ es exactamente la tendencia RLOESS (ver sección 13).
@@ -532,7 +583,7 @@ donde $M$ es el número de componentes **retenidas**. $\tau = 1$ indica estructu
 6. **Dirección dominante del gradiente**, que es el vector propio de $\lambda_1$:
 
    $$
-   \theta_\nabla = \tfrac{1}{2}\operatorname{atan2}\big(2S_{xy},\ S_{xx} - S_{yy}\big).
+   \theta_\nabla = \tfrac{1}{2}\mathrm{atan2}\big(2S_{xy},\ S_{xx} - S_{yy}\big).
    $$
 
    Las estructuras son perpendiculares al gradiente, así que la **orientación dominante** es
@@ -587,7 +638,7 @@ Se excluyen las diagonales que ya tienen un camino ortogonal (forma de "L") para
 
 ## 13. Descriptores de perfil de gradiente (sobre $E_B$)
 
-Perfil vertical: $q(i) = \operatorname{med}_j E_B(i,j)$, con $i = 1,\dots,N$. Por la sección 7.4, **$q = \tilde p$, la tendencia RLOESS**. Sobre él se ajusta una recta por mínimos cuadrados:
+Perfil vertical: $q(i) = \mathrm{med}_j E_B(i,j)$, con $i = 1,\dots,N$. Por la sección 7.4, **$q = \tilde p$, la tendencia RLOESS**. Sobre él se ajusta una recta por mínimos cuadrados:
 
 $$
 \hat q(i) = m\,i + b, \qquad
