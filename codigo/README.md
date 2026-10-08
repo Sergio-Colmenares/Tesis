@@ -21,7 +21,9 @@ codigo/
 └── utils/
     ├── rutas_tesis.m              Rutas del repositorio (datos/, resultados/)
     ├── IBWread.m                  Lectura de archivos .ibw
-    └── readIBWbinheader.m
+    ├── readIBWheaders.m
+    ├── readIBWbinheader.m
+    └── python_colormaps.mat       Mapas de color de las figuras
 ```
 
 ## Cómo correrlo
@@ -40,11 +42,6 @@ Todos los scripts usan la misma configuración: sensibilidad 0.55, Otsu con
 6 umbrales, σ local 21 px, σ regional 51 px, componentes ≥ 50 px, respaldo
 local si la cobertura < 15 %, cierre r = 3 px, poda 5 iteraciones y RLOESS
 de 50 filas. Si se cambia alguno, hay que cambiarlo en todos.
-
-## Pendiente
-
-- Faltan `utils/readIBWheaders.m` (lo llama `IBWread`) y
-  `utils/python_colormaps.mat`: no se pudieron extraer del `.rar`.
 
 ## Reglas
 
