@@ -43,7 +43,7 @@ Script: `Barrido_Validacion` (`barrido_binarizacion55.csv`). 1 344 configuracion
 | Métrica | Definición | Qué se busca |
 |---|---|---|
 | Material agregado | $\Delta c = c(M_{mor}) - c(M_e)$ | Pequeño: el cierre no debe inventar material |
-| Componentes fusionadas | $\Delta N_c = N_c(M_e) - N_c(M_{mor})$ | Que una discontinuidades reales sin fusionar regiones separadas |
+| Componentes fusionadas | $\Delta N_c = N_c(M_e) - N_c(M_{mor})$ | Que se unan las discontinuidades reales sin fusionar regiones separadas |
 | Derivadas $d(\Delta c)/dr$, $d(\Delta N_c)/dr$ | diferencias entre radios consecutivos | **Codo**: el radio donde dejan de bajar y rebotan (r = 3 → 4) |
 | Índice de percolación | $\max_k\lvert C_k\rvert/\sum_k\lvert C_k\rvert$ | Que no salte (un salto indica conexiones artificiales) |
 | Longitud del esqueleto | (corregida: pondera las diagonales con √2) | Que se estabilice |
