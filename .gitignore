@@ -24,6 +24,15 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
+# --- MATLAB ---
+*.asv
+*.autosave
+*.m~
+*.mex*
+slprj/
+codegen/
+resources/project/*.lock
+
 # --- R ---
 .Rhistory
 .RData
