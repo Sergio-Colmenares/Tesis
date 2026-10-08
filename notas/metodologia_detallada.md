@@ -621,11 +621,11 @@ $$
 **Longitud de red** (sobre $S$): cada enlace entre píxeles vecinos del esqueleto suma su longitud euclidiana:
 
 $$
-n_\perp = \#\{\text{pares de píxeles de } S \text{ adyacentes en horizontal o vertical}\},
+n_\perp = \left|\{\text{pares de píxeles de } S \text{ adyacentes en horizontal o vertical}\}\right|,
 $$
 
 $$
-n_\times = \#\{\text{pares adyacentes en diagonal sin un camino ortogonal que los conecte}\},
+n_\times = \left|\{\text{pares adyacentes en diagonal sin un camino ortogonal que los conecte}\}\right|,
 $$
 
 $$
