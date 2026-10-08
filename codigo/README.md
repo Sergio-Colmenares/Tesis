@@ -2,6 +2,8 @@
 
 ```
 codigo/
+├── configurar.m                   Prepara una sesión nueva de MATLAB (path, carpetas, toolboxes)
+├── visor_etapas.m                 Visor interactivo: las 15 etapas del pipeline de una imagen
 ├── pipeline/
 │   └── Descriptores_Final.m       Pipeline completo + 20 descriptores → resultados/descriptores.csv
 ├── validacion/
@@ -29,8 +31,10 @@ codigo/
 ## Cómo correrlo
 
 1. Copiar los `.ibw` a `datos/crudos/` (no se suben al repositorio).
-2. En MATLAB, desde la raíz del repositorio: `addpath(genpath('codigo'))`.
-3. Correr primero `Descriptores_Final` (genera `descriptores.csv`, que usan
+2. En MATLAB, desde la raíz del repositorio: `run('codigo/configurar.m')`.
+3. `visor_etapas` para revisar el pipeline imagen por imagen
+   (flechas ←/→ para navegar, clic en un panel para verlo grande).
+4. Correr primero `Descriptores_Final` (genera `descriptores.csv`, que usan
    `barrido_poda`, `diagnostico_orientacion` y `verificar_documento`).
 
 Todas las rutas se calculan con `rutas_tesis()`, así que no hay que editar

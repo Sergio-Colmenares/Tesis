@@ -39,9 +39,10 @@ resources/project/*.lock
 .Rproj.user/
 
 # --- Datos ---
-# Los datos crudos grandes no se suben; descomenta si aplica:
-# datos/crudos/*
-# !datos/crudos/.gitkeep
+# Los datos crudos (.ibw) pesan demasiado: se gestionan fuera del repositorio
+datos/crudos/*
+!datos/crudos/.gitkeep
+!datos/crudos/README.md
 
 # --- Sistema / editores ---
 .DS_Store
