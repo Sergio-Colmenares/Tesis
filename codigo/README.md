@@ -4,6 +4,7 @@
 codigo/
 ├── configurar.m                   Prepara una sesión nueva de MATLAB (path, carpetas, toolboxes)
 ├── visor_etapas.m                 Visor interactivo: las 15 etapas del pipeline de una imagen
+├── visor_descriptores.m           Visor interactivo: cómo se mide cada descriptor + tabla de los 20
 ├── pipeline/
 │   └── Descriptores_Final.m       Pipeline completo + 20 descriptores → resultados/descriptores.csv
 ├── validacion/
@@ -22,6 +23,10 @@ codigo/
 │   └── estabilidad_vs_coherencia.m  Estabilidad de θ según la coherencia
 └── utils/
     ├── rutas_tesis.m              Rutas del repositorio (datos/, resultados/)
+    ├── parametros_pipeline.m      Parámetros del pipeline (para los visores)
+    ├── pipeline_etapas.m          Pipeline de una imagen, guardando cada etapa
+    ├── calcular_descriptores.m    Los 20 descriptores de una imagen (+ elementos para graficar)
+    ├── parsear_fabricacion_ibw.m  Voltaje/frecuencia/réplica/posición desde el nombre
     ├── IBWread.m                  Lectura de archivos .ibw
     ├── readIBWheaders.m
     ├── readIBWbinheader.m
@@ -32,8 +37,11 @@ codigo/
 
 1. Copiar los `.ibw` a `datos/crudos/` (no se suben al repositorio).
 2. En MATLAB, desde la raíz del repositorio: `run('codigo/configurar.m')`.
-3. `visor_etapas` para revisar el pipeline imagen por imagen
+3. `visor_etapas` para revisar el pipeline imagen por imagen y
+   `visor_descriptores` para ver cómo se mide cada descriptor
    (flechas ←/→ para navegar, clic en un panel para verlo grande).
+   Si ya existe `resultados/descriptores.csv`, `visor_descriptores` marca
+   cada valor como `ok` o `DIF` frente al CSV.
 4. Correr primero `Descriptores_Final` (genera `descriptores.csv`, que usan
    `barrido_poda`, `diagnostico_orientacion` y `verificar_documento`).
 

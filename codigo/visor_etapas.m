@@ -85,7 +85,7 @@ function visor_etapas(k0)
         E = pipeline_etapas(fullfile(rutas.crudos, nombres{k}), P);
         delete(findall(fig, 'Type', 'axes'));
 
-        [vV, fHz, rep, pos] = parsear_fabricacion(nombres{k});
+        [vV, fHz, rep, pos] = parsear_fabricacion_ibw(nombres{k});
         txt_resp = 'no';
         if E.respaldo, txt_resp = 'SI'; end
         set(info, 'String', sprintf(['[%d/%d]  %s   |   %g V, %g Hz, réplica %d, ' ...
@@ -145,94 +145,6 @@ end
 
 
 % =========================================================================
-% PARÁMETROS (idénticos a pipeline/Descriptores_Final.m)
-% =========================================================================
-function P = parametros_pipeline()
-    P.sens = 0.55;   % sensibilidad de adaptthresh
-    P.pmin = 50;     % área mínima por componente [px]
-    P.otsu = 6;      % número de umbrales de multithresh
-    P.vL   = 21;     % NeighborhoodSize local (actúa como sigma)
-    P.vR   = 51;     % NeighborhoodSize regional (actúa como sigma)
-    P.ufb  = 0.15;   % cobertura mínima antes del respaldo
-    P.r    = 3;      % radio del cierre morfológico [px]
-    P.spur = 5;      % iteraciones de poda del esqueleto
-    P.w    = 50;     % ventana RLOESS [filas]
-end
-
-
-% =========================================================================
-% PIPELINE COMPLETO DE UNA IMAGEN, GUARDANDO CADA ETAPA
-% =========================================================================
-function E = pipeline_etapas(ruta, P)
-    Full = IBWread(ruta);
-    Eraw = rot90(double(Full.y(:, :, 5)));
-    Topo = rot90(double(Full.y(:, :, 1)));
-    if ~isequal(size(Eraw), size(Topo))
-        Eraw = imresize(Eraw, size(Topo));
-    end
-
-    % Corrección de crosstalk topográfico
-    En = (Eraw - median(Eraw(:))) / mad(Eraw(:), 1);
-    Tn = (Topo - median(Topo(:))) / mad(Topo(:), 1);
-    [Gx, Gy] = gradient(Tn);
-    X    = [Tn(:), Gx(:), Gy(:), ones(numel(Tn), 1)];
-    beta = X \ En(:);
-    Efit = reshape(X * beta, size(En));
-    Ecorr = En - Efit;
-
-    c = corrcoef(En(:), Tn(:));
-    E.r_ET   = c(1, 2);
-    e_c      = En(:) - mean(En(:));
-    E.R_mult = sqrt(max(0, 1 - sum(Ecorr(:).^2) / sum(e_c.^2)));
-
-    % Limpieza y normalización
-    E1     = SyP_selectivo(Ecorr, [5 5], 3);
-    Efondo = correccion_fondo(E1);
-    Eclean = SyP_selectivo(Efondo, [5 1], 2);
-    Eseg   = rescale_1_99(Eclean);
-
-    % Binarizaciones
-    th = multithresh(Eseg, P.otsu);
-    MG = Eseg >= th(1);
-    TR = adaptthresh(Eseg, P.sens, 'NeighborhoodSize', [P.vR P.vR], ...
-        'Statistic', 'gaussian', 'ForegroundPolarity', 'bright');
-    MR = imbinarize(Eseg, TR);
-    TL = adaptthresh(Eseg, P.sens, 'NeighborhoodSize', [P.vL P.vL], ...
-        'Statistic', 'gaussian', 'ForegroundPolarity', 'bright');
-    ML = imbinarize(Eseg, TL);
-
-    Me = bwareaopen(bwareaopen(MG, P.pmin) & MR & ML, P.pmin);
-    E.respaldo = nnz(Me) / numel(Me) < P.ufb;
-    if E.respaldo
-        Me = bwareaopen(ML, P.pmin);
-    end
-    Mmor = imclose(Me, strel('disk', P.r));
-    sk   = bwmorph(bwskel(Mmor), 'spur', P.spur);
-
-    % Imagen eléctrica reconstruida E_B
-    EcB  = Eraw - Efit .* mad(Eraw(:), 1);
-    Esy  = SyP_selectivo(EcB, [5 5], 3);
-    pV   = median(Esy, 2);
-    tV   = smoothdata(pV, 'rloess', P.w);
-    EB   = Esy - (pV - tV);
-
-    % Esqueleto en rojo sobre M_mor en gris
-    base = 0.55 * double(Mmor);
-    rr = base; gg = base; bb = base;
-    rr(sk) = 1; gg(sk) = 0.1; bb(sk) = 0.1;
-
-    E.Eraw = Eraw;   E.Topo = Topo;   E.Ecorr = Ecorr;
-    E.E1 = E1;       E.Efondo = Efondo; E.Eclean = Eclean; E.Eseg = Eseg;
-    E.ML = ML;       E.MG = MG;       E.MR = MR;
-    E.Me = Me;       E.Mmor = Mmor;   E.rgb_skel = cat(3, rr, gg, bb);
-    E.EB = EB;       E.perfil_V = pV; E.tendencia_V = tV;
-    E.cobertura = nnz(Me) / numel(Me);
-    E.Nc_e   = bwconncomp(Me).NumObjects;
-    E.Nc_mor = bwconncomp(Mmor).NumObjects;
-end
-
-
-% =========================================================================
 % VISUALIZACIÓN
 % =========================================================================
 function mostrar(ax, datos, tipo, cmap)
@@ -266,57 +178,4 @@ function L = limites(A)
     if ~(L(2) > L(1))
         L = [min(A(:)), max(A(:)) + eps];
     end
-end
-
-
-% =========================================================================
-% FUNCIONES DEL PIPELINE (copiadas de pipeline/Descriptores_Final.m)
-% =========================================================================
-function I_out = SyP_selectivo(I_in, kernel, n_sigmas)
-    M     = medfilt2(I_in, kernel);
-    R     = abs(I_in - M);
-    sigma = median(R(:)) / 0.6745;
-    malos = R > (n_sigmas * sigma);
-    I_out = I_in;
-    I_out(malos) = M(malos);
-end
-
-function I_out = correccion_fondo(I_in)
-    I_out = zeros(size(I_in));
-    for i = 1:size(I_in, 1)
-        fila   = I_in(i, :);
-        ratio  = mad(fila, 1) / (prctile(fila, 95) - prctile(fila, 5));
-        p      = max(25, min(45, 40 - 20 * ratio));
-        fondo  = fila(fila <= prctile(fila, p));
-        if isempty(fondo)
-            offset = median(fila);
-        else
-            offset = median(fondo);
-        end
-        I_out(i, :) = fila - offset;
-    end
-end
-
-function I_out = rescale_1_99(D)
-    lo = prctile(D(:), 1);
-    hi = prctile(D(:), 99);
-    if hi == lo
-        I_out = zeros(size(D));
-        return;
-    end
-    I_out = max(0, min(1, (D - lo) / (hi - lo)));
-end
-
-function [voltaje_V, frecuencia_Hz, replica, posicion] = parsear_fabricacion(nombre_archivo)
-    voltaje_V = NaN; frecuencia_Hz = NaN; replica = NaN; posicion = NaN;
-    [~, nombre] = fileparts(nombre_archivo);
-    tok = regexp(nombre, '^([0-2])([abc])-([1-9])$', 'tokens');
-    if isempty(tok), return; end
-    voltajes    = [5 10 15];
-    frecuencias = [10 1000 100000];
-    voltaje_V     = voltajes(str2double(tok{1}{1}) + 1);
-    frecuencia_Hz = frecuencias(tok{1}{2} - 'a' + 1);
-    n        = str2double(tok{1}{3});
-    replica  = ceil(n / 3);
-    posicion = mod(n - 1, 3) + 1;
 end
