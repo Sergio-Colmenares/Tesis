@@ -27,6 +27,20 @@ function visor_descriptores(k0)
 % Navegación: flechas izquierda/derecha (o botones); clic en un panel lo
 % abre en grande; zoom sincronizado entre los paneles de imagen.
 
+    % Verifica que estén las funciones de codigo/utils (zip nuevo completo y path al día)
+    requeridas = {'rutas_tesis', 'parametros_pipeline', 'pipeline_etapas', 'calcular_descriptores', ...
+                  'parsear_fabricacion_ibw', 'IBWread', 'readIBWheaders'};
+    faltan = requeridas(cellfun(@(f) exist(f, 'file') ~= 2, requeridas));
+    if ~isempty(faltan)
+        rehash path;
+        faltan = requeridas(cellfun(@(f) exist(f, 'file') ~= 2, requeridas));
+    end
+    if ~isempty(faltan)
+        error(['Faltan funciones de codigo/utils: %s.\n' ...
+               'Reemplaza la carpeta codigo/ completa con la del último .zip ' ...
+               'y corre configurar desde la carpeta Tesis_codigo.'], strjoin(faltan, ', '));
+    end
+
     rutas = rutas_tesis();
     archivos = dir(fullfile(rutas.crudos, '*.ibw'));
     if isempty(archivos)
