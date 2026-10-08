@@ -4,8 +4,8 @@ Descripción completa, etapa por etapa, de lo que calcula `codigo/Descriptores_F
 Usa la notación de la tesis ($E$, $T$, $E_{seg}$, $M_L$, $M_G$, $M_R$, $M_e$, $M_{mor}$, $E_B$)
 y está pensada como base para reescribir el Capítulo 3.
 
-Las partes marcadas con **[verificar en MATLAB]** dependen del funcionamiento interno de una
-función de toolbox que no se pudo ejecutar al redactar esto.
+El comportamiento interno de `adaptthresh` (factor de umbral y núcleo gaussiano) se verificó
+con el código fuente de MATLAB (`edit adaptthresh`) y una prueba numérica.
 
 ---
 
@@ -18,7 +18,7 @@ función de toolbox que no se pudo ejecutar al redactar esto.
 | $\Delta$ | resolución espacial $L/N$ | $58.59\ \text{nm/px}$ |
 | $(i, j)$ | fila $i$ (eje $y$, hacia abajo), columna $j$ (eje $x$) | — |
 | $s$ | sensibilidad de la binarización adaptativa | $0.55$ |
-| $n_L,\ n_R$ | ventana local / regional | $21$ px / $51$ px |
+| $n_L,\ n_R$ | parámetro `NeighborhoodSize` local / regional (actúa como $\sigma$ del núcleo gaussiano, ver 6.1) | $21$ px / $51$ px |
 | $K$ | número de umbrales de Otsu multinivel | $6$ (→ 7 clases) |
 | $A_{\min}$ | área mínima por componente conexa | $50$ px |
 | $c_{fb}$ | cobertura mínima antes del respaldo | $0.15$ |
@@ -232,15 +232,30 @@ $$
 ## 6. Binarización multiescala
 
 ### 6.1 Binarización local $M_L$ y regional $M_R$
-Ambas usan umbralización adaptativa con estadístico gaussiano (`adaptthresh` + `imbinarize`). Para una ventana $n \times n$:
+Ambas usan umbralización adaptativa con estadístico gaussiano (`adaptthresh` + `imbinarize`), con parámetro `NeighborhoodSize` $= n$:
 
-1. **Fondo local**: promedio de $E_{seg}$ ponderado con un núcleo gaussiano,
+1. **Fondo local**: promedio de $E_{seg}$ ponderado con un núcleo gaussiano. En el código fuente de `adaptthresh`, la opción `'gaussian'` ejecuta
+
+   ```matlab
+   T = scaleFactor*imgaussfilt(I, nhoodSize);
+   ```
+
+   El segundo argumento de `imgaussfilt` es la **desviación estándar** del núcleo, no el tamaño de la ventana. Por lo tanto, **$n$ actúa como $\sigma$**:
 
    $$
-   \mu_G(i,j) = \sum_{(u,v)} G_{\sigma_n}(u-i,\ v-j)\, E_{seg}(u,v),
+   \mu_G(i,j) = \sum_{(u,v)} G_{n}(u-i,\ v-j)\, E_{\mathrm{seg}}(u,v),
+   \qquad
+   G_{n}(\Delta u, \Delta v) = \frac{1}{Z}\exp\!\left(-\frac{\Delta u^2 + \Delta v^2}{2n^2}\right),
    $$
 
-   donde la desviación $\sigma_n$ del núcleo la fija `adaptthresh` a partir del tamaño $n$ **[verificar en MATLAB con `edit adaptthresh`]**.
+   donde $Z$ normaliza los pesos a suma 1. El núcleo se trunca en un soporte de $2\lceil 2n \rceil + 1$ píxeles por lado (tamaño por defecto de `imgaussfilt`) y la imagen se extiende en los bordes replicando el último valor (`'replicate'`).
+
+   | | $n$ ($=\sigma$) | $\sigma$ físico | Soporte del núcleo | Soporte físico |
+   |---|---|---|---|---|
+   | $M_L$ | 21 px | $\approx 1.23\ \mu$m | $85 \times 85$ px | $\approx 5.0\ \mu$m |
+   | $M_R$ | 51 px | $\approx 2.99\ \mu$m | $205 \times 205$ px | $\approx 12.0\ \mu$m |
+
+   En 2D, la fracción del peso dentro de un radio $k\sigma$ es $1 - e^{-k^2/2}$: el 39 % del peso está a menos de $\sigma$ del píxel y el 86 % a menos de $2\sigma$. El vecindario efectivo de $M_L$ tiene entonces un radio del orden de 20–40 px ($\approx 1.2$–$2.5\ \mu$m), y el de $M_R$ de 50–100 px ($\approx 3$–$6\ \mu$m). **No son ventanas de $21\times21$ y $51\times51$ px**, como se describe actualmente en la tesis.
 
 2. **Umbral escalado por la sensibilidad** (polaridad `bright`):
 
@@ -311,12 +326,12 @@ Así se explica el nombre: a mayor sensibilidad, menos contraste se exige y se d
 **Consecuencias:**
 - **Corrección para la tesis**: reemplazar la ecuación por $M_L(i,j) = 1$ si $E_{seg}(i,j) > \big(1.6 - s\big)\,\mu_G(i,j)$, y explicar que con $s = 0.55$ el criterio equivale a un contraste local mínimo del 5 %.
 - **Limitación a mencionar**: el criterio es relativo. En zonas oscuras ($\mu_G$ pequeño), un 5 % es una diferencia absoluta mínima y el ruido la supera con facilidad. Esa es la "fragmentación granular en el fondo" que muestra $M_L$, y la razón para intersecarla con $M_G$, que usa un umbral absoluto, y con $M_R$, que usa un vecindario más amplio.
-- **Confirmado**: sobre una imagen constante de valor 0.5, `adaptthresh` con $s=0.55$ devuelve un umbral de $0.525 = 1.05 \times 0.5$, lo que confirma $\gamma(s) = 0.6 + (1-s)$.
+- **Confirmado**: sobre una imagen constante de valor 0.5, `adaptthresh` con $s=0.55$ devuelve un umbral de $0.525 = 1.05 \times 0.5$. El código fuente lo fija en `sensitivityToScaleFactor`: `scaleFactor = 0.6 + (1-sensitivity)` para polaridad `bright`, y el umbral final se recorta a $[0,1]$.
 
-| Máscara | Ventana | Papel |
+| Máscara | Escala ($\sigma$) | Papel |
 |---|---|---|
-| $M_L$ | $21 \times 21$ px ($\approx 1.2\ \mu$m) | detalle fino; sigue variaciones sutiles, pero genera falsos positivos granulares en el fondo |
-| $M_R$ | $51 \times 51$ px ($\approx 3\ \mu$m) | contexto regional; descarta estructuras que solo son brillantes respecto a una vecindad pequeña |
+| $M_L$ | $\sigma = 21$ px ($\approx 1.2\ \mu$m) | detalle fino; sigue variaciones sutiles, pero genera falsos positivos granulares en el fondo |
+| $M_R$ | $\sigma = 51$ px ($\approx 3\ \mu$m) | contexto regional; descarta estructuras que solo son brillantes respecto a una vecindad pequeña |
 
 ### 6.2 Binarización global $M_G$: Otsu multinivel
 `multithresh` divide el histograma de $E_{seg}$ en $K+1$ clases con $K$ umbrales $t_1 < \dots < t_K$, escogidos para maximizar la varianza entre clases:

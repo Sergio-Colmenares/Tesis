@@ -19,6 +19,7 @@ Leyenda: ✅ coincide · ⚠️ coincide pero el documento debe precisarlo · �
 | 4 | Perfil de gradiente | Por construcción, el perfil (mediana por fila) de `E_B` **es exactamente la tendencia RLOESS**: `E_B` se obtiene restando a cada fila `perfil − tendencia`. «Ruido RMS horizontal» no mide ruido, mide cuánto se aparta la tendencia suavizada de una recta | Decirlo explícitamente en 3.2.6 y renombrar el descriptor (p. ej. «no linealidad del perfil») |
 | 5 | CNTA, umbral α | El documento dice α = 2000 nm «≈ longitud de **dos** SWCNTs»; el código dice «longitud máxima de **un** SWCNT individual» | Unificar con lo que dice [4] |
 | 6 | Filtro 5×1 | En MATLAB `[5 1]` = 5 filas × 1 columna, es decir un kernel **vertical**. Es correcto para eliminar líneas horizontales (compara cada píxel con las filas vecinas), pero el documento no lo aclara | Escribir «kernel vertical 5×1 (5 filas)» y explicar por qué elimina líneas horizontales — responde además el comentario del director |
+| 7 | Binarización local/regional | Con `'Statistic','gaussian'`, `adaptthresh` llama `imgaussfilt(I, nhoodSize)`: el valor 21 (o 51) es la **desviación estándar σ** del núcleo, no el tamaño de la ventana. El núcleo real mide 85×85 px (local) y 205×205 px (regional) (✅ confirmado en el código fuente) | En la tesis, describir los parámetros como σ = 21 px (≈1.2 µm) y σ = 51 px (≈3 µm), no como «ventana de 21×21 / 51×51 px». Aplica también a la validación de parámetros del Cap. 4 |
 
 Puntos menores al final del documento.
 
@@ -60,7 +61,7 @@ Idéntica a la ecuación del documento (recorte a [0, 1]).
     T(32,32)   % 0.525 → factor 1.05 = 0.6+(1−s);  0.225 → factor (1−s) como dice el documento
     ```
     También puedes ver la fórmula con `edit adaptthresh`.
-  - ⚠️ El σ del núcleo gaussiano lo define internamente `adaptthresh` a partir del tamaño de ventana; el documento no lo dice.
+  - ❌ Ver discrepancia #7: `NeighborhoodSize` actúa como σ del núcleo gaussiano (`imgaussfilt(I, nhoodSize)`), no como tamaño de ventana.
 - **Global**: ❌ ver discrepancia #2. «La primera clase se descarta» ✅ (`Eseg >= thresh(1)`).
   - ⚠️ El documento la describe como «análisis multiescala»; `multithresh` es Otsu **multinivel**, no multiescala.
   - El `bwareaopen` aplicado a `BW1` antes de la intersección no está en el documento, pero es redundante: no cambia el resultado final.
