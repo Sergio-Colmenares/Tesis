@@ -35,9 +35,10 @@ clear; clc; close all;
 % -------------------------------------------------------------------------
 % CONFIGURACIÓN
 % -------------------------------------------------------------------------
-inputFolder     = 'C:\Users\MSI\Desktop\Tesis\DATOS\Original Data';
-colormapMATpath = 'C:\Users\MSI\Desktop\Tesis\Codigo\Codes\python_colormaps.mat';
-outputCSV       = 'C:\Users\MSI\Desktop\Tesis\Resultados\descriptores.csv';
+rutas = rutas_tesis();   % rutas relativas al repositorio (codigo/utils)
+inputFolder     = rutas.crudos;
+colormapMATpath = rutas.colormap;
+outputCSV       = fullfile(rutas.resultados, 'descriptores.csv');
 
 % Parámetros del pipeline
 sensibilidad = 0.55;
@@ -140,11 +141,11 @@ for k = 1:length(ibwFiles)
 
         % Fallback para imágenes de alta calidad con cobertura baja
         if cobertura < 0.15
-            T_fb  = adaptthresh(Eseg, 0.55, ...
+            T_fb  = adaptthresh(Eseg, sensibilidad, ...
                 'NeighborhoodSize',[21 21], ...
                 'Statistic','gaussian', ...
                 'ForegroundPolarity','bright');
-            BW2       = bwareaopen(imbinarize(Eseg, T_fb), 50);
+            BW2       = bwareaopen(imbinarize(Eseg, T_fb), pix_minimos);
             cobertura = sum(BW2(:)) / numel(BW2);
         end
 
