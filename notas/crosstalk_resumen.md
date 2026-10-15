@@ -34,6 +34,21 @@ Se evaluó quitar a la topografía su perfil medio a lo largo de la línea, $T_l
 - Declarar como limitación la curvatura residual de la topografía (nivelado de primer orden) y su efecto en $\beta_1$ y en el canal eléctrico (mediana 3 %), indicando que no se observan consecuencias en las máscaras.
 - La validación es visual sobre los casos con crosstalk fuerte (`0a-5`, `0a-4`).
 
+## Efecto de la limitación sobre los descriptores (81 mediciones)
+Se calcularon los 20 descriptores con la corrección actual y con la topografía sin curvatura. Las diferencias se expresan en unidades de la desviación estándar dentro de condición, $s_w$ (combinada de las 9 imágenes de cada una de las 9 condiciones).
+
+- **Intensidad y perfil:** el efecto es despreciable. La mediana del cambio está entre $0.002$ y $0.006\,s_w$ y el máximo es $\le 0.15\,s_w$.
+- **Morfológicos:**
+  - **No hay sesgo.** Por ejemplo, la tortuosidad sube en 42 de 81 mediciones, con un cambio mediano de $0.004$.
+  - **Pero hay sensibilidad.** La mediana del cambio va de $0.05$ a $0.34\,s_w$, y el P90 llega a $pprox 1\,s_w$ (tortuosidad $0.96$; CNTA $0.63$).
+  - **Cobertura:** cambio mediano de 0.1 puntos porcentuales, con un máximo de 1.6.
+- **Máximos que no indican un efecto real:**
+  - el de orientación en `0a-6` es un artefacto de la diferencia lineal entre ángulos: 1.8° frente a 177.4° son en realidad 4.4° de diferencia;
+  - el de elongación media en `1c-1` (3.06 → 2.02) refleja que esa media depende de unas pocas componentes muy alargadas.
+- **Interpretación:**
+  - la limitación no sesga los descriptores;
+  - lo que mide la prueba es la **sensibilidad de los descriptores morfológicos a una perturbación pequeña de la entrada**, que viene de la binarización (umbral global) y no del crosstalk.
+
 ## Observación lateral: papel real de $M_G$ (no se modifica)
 Pipeline actual, 81 mediciones:
 
