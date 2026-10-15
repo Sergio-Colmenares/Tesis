@@ -6,7 +6,7 @@
 // (una sola flecha entre bloques), para que las líneas no se crucen.
 digraph proceso {
     graph [rankdir=TB, fontname="DejaVu Sans", fontsize=13, nodesep=0.3, ranksep=0.32,
-           newrank=true, compound=true, splines=spline, pad=0.2];
+           newrank=true, compound=true, splines=ortho, pad=0.2];
     node  [shape=box, style="rounded,filled", fillcolor="#FFFFFF", fontname="DejaVu Sans",
            fontsize=10, color="#555555", penwidth=1, margin="0.12,0.06"];
     edge  [color="#444444", arrowsize=0.7, penwidth=1, fontname="DejaVu Sans"];
@@ -47,12 +47,13 @@ digraph proceso {
         v1   [label=<<B>Validación</B><BR/>barrido de configuraciones<BR/>cobertura, N<SUB>c</SUB>, FN, CV<BR/>comparación con métodos más simples>,
               shape=note, style="filled", fillcolor="#FAFAFA", color="#999999", fontsize=8, fontcolor="#444444"];
         {rank=same; ml; mg; mr;}
+        ml -> mg -> mr [style=invis];
         {rank=same; and; v1;}
         {rank=same; resp; me;}
         ml -> and; mg -> and; mr -> and;
         and -> dec;
-        dec -> resp [label=" no", fontsize=9];
-        dec -> me   [label=" sí", fontsize=9];
+        dec -> resp [xlabel=" no", fontsize=9];
+        dec -> me   [xlabel=" sí", fontsize=9];
         resp -> me;
         v1 -> and [style=dashed, color="#999999", arrowhead=none];
     }
@@ -74,7 +75,7 @@ digraph proceso {
         ib -> v2 [style=dashed, color="#999999", arrowhead=none];
     }
     me -> mmor;
-    cross -> ibsy [style=dashed, label=<  <I>Î</I><SUB>T</SUB>>, fontsize=9];
+    cross -> ibsy [style=dashed, xlabel=<<I>Î</I><SUB>T</SUB>>, fontsize=9];
 
     // ------------------------------------------------------------------
     subgraph cluster_desc {
