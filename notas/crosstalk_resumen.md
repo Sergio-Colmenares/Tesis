@@ -22,6 +22,26 @@ Modelo lineal global por medición: $\tilde E = \beta_0 + \beta_1\tilde T + \bet
 4. **Limitación del método lineal global:** no elimina el crosstalk local o no lineal (bordes residuales de rayones, partículas, rayones sin huella topográfica).
 5. **Para la tesis:** la evidencia correcta es visual y local (pares `0a-5` y `0a-4`), no la correlación posterior (≈ 10⁻¹⁶ por construcción) ni el R² global.
 
-## Pendiente de decidir
-- Si se quita la curvatura de la topografía antes del ajuste (polinomio de 2.º orden por línea o perfil común) y, por tanto, se recalcula todo el pipeline.
-- Cómo reformular las secciones 3.1.1 y 4.1.1 con esta evidencia.
+## Decisión: se mantiene la corrección actual
+Se evaluó quitar a la topografía su perfil medio a lo largo de la línea, $T_l = \tilde T - \overline{\tilde T}_{\text{col}}$, antes del ajuste.
+
+- **Donde la corrección es visible no cambia nada:** `0a-5`: $\beta_{\partial x}$ −0.88 → −0.87.
+- **Cambia la entrada de una binarización sensible a cambios globales.** En `0a-2`, la diferencia entre versiones fue de ±0.2 MAD, toda en el término de altura (las pendientes no aportan), pero bajó el primer umbral de Otsu de 0.126 a 0.078 y creó una mancha sobre una zona identificada como fondo.
+- **La curvatura inyectada no tiene consecuencias visibles:** en las 5 mediciones con más curvatura inyectada (`0a-6`, `0b-6`, `1a-9`, `1c-1`, `1c-5`), las máscaras finales no muestran la curva.
+
+**Para la Sección 3.1.1:**
+- El modelo es empírico y sus coeficientes no se interpretan físicamente.
+- Declarar como limitación la curvatura residual de la topografía (nivelado de primer orden) y su efecto en $\beta_1$ y en el canal eléctrico (mediana 3 %), indicando que no se observan consecuencias en las máscaras.
+- La validación es visual sobre los casos con crosstalk fuerte (`0a-5`, `0a-4`).
+
+## Observación lateral: papel real de $M_G$ (no se modifica)
+Pipeline actual, 81 mediciones:
+
+- $M_G$ deja pasar el **46–98 %** de la imagen (mediana 73.8 %), frente a una cobertura final de ~22 %. La excepción es `0a-9` (19.4 %), el caso del respaldo.
+- La primera clase de Otsu es el fondo más oscuro (mediana 26 % de la imagen), no todo el fondo. Su papel real es **excluir el fondo oscuro heterogéneo** (Solo Local 0.272 → Global+Local 0.256 de cobertura).
+- La red la definen sobre todo los umbrales adaptativos.
+- **Pendiente de redacción (no de método):** la frase de la metodología «la primera clase, asociada al fondo polimérico, se descarta» debe describir este papel.
+- **Alternativas exploradas y descartadas:**
+  - barrera de significancia con fondo local (demasiado laxa: detecta la banda de `0a-2`);
+  - barrera global $m + k s$ (elimina detección);
+  - separación por forma (inviable por la deformación con la profundidad).
