@@ -36,7 +36,7 @@ Ambos canales se normalizan primero de forma robusta, restando su mediana y divi
 \label{eq:norm_robusta}
 \end{equation}
 
-donde la mediana y la MAD se calculan sobre todos los píxeles de la medición. Se emplean la mediana y la MAD en lugar de la media y la desviación estándar porque no se ven afectadas por valores extremos, como rayones o saltos de la punta.
+donde la mediana y la MAD se calculan sobre todos los píxeles de la medición. Se emplean la mediana y la MAD en lugar de la media y la desviación estándar porque no se ven afectadas por valores extremos derivados del ruido.
 
 A partir de los canales normalizados se ajusta un modelo de regresión lineal múltiple de la forma:
 
