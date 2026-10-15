@@ -40,7 +40,7 @@ Se calcularon los 20 descriptores con la corrección actual y con la topografía
 - **Intensidad y perfil:** el efecto es despreciable. La mediana del cambio está entre $0.002$ y $0.006\,s_w$ y el máximo es $\le 0.15\,s_w$.
 - **Morfológicos:**
   - **No hay sesgo.** Por ejemplo, la tortuosidad sube en 42 de 81 mediciones, con un cambio mediano de $0.004$.
-  - **Pero hay sensibilidad.** La mediana del cambio va de $0.05$ a $0.34\,s_w$, y el P90 llega a $pprox 1\,s_w$ (tortuosidad $0.96$; CNTA $0.63$).
+  - **Pero hay sensibilidad.** La mediana del cambio va de $0.05$ a $0.34\,s_w$, y el P90 llega a $\approx 1\,s_w$ (tortuosidad $0.96$; CNTA $0.63$).
   - **Cobertura:** cambio mediano de 0.1 puntos porcentuales, con un máximo de 1.6.
 - **Máximos que no indican un efecto real:**
   - el de orientación en `0a-6` es un artefacto de la diferencia lineal entre ángulos: 1.8° frente a 177.4° son en realidad 4.4° de diferencia;
