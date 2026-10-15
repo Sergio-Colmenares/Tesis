@@ -375,7 +375,7 @@ En conjunto, la comparación empírica respalda la elección del Triple AND como
 \section{Validación de las Representaciones de Trabajo}
 \label{sec:representaciones}
  
-Las máscaras y el esqueleto definidos en la Sección de Metodología dependen de tres parámetros que no se barrieron en la sección anterior: el radio del cierre morfológico que define $M_{mor}$, la ventana de la corrección de rayas RLOESS empleada para construir la imagen eléctrica reconstruida $E_{B}$, y el número de iteraciones de poda de pixeles aplicado al esqueleto. Esta sección reporta la validación empírica de los parámetros que más influyen sobre los descriptores derivados.
+Las máscaras y el esqueleto definidos en la Sección de Metodología dependen de tres parámetros que no se barrieron en la sección anterior: el radio del cierre morfológico que define $M_{mor}$, la ventana de la corrección de rayas RLOESS empleada para construir la imagen eléctrica reconstruida $I_B$, y el número de iteraciones de poda de pixeles aplicado al esqueleto. Esta sección reporta la validación empírica de los parámetros que más influyen sobre los descriptores derivados.
  
 \subsection{Radio del Cierre Morfológico}
 \label{sec:radio_cierre}
@@ -423,13 +423,13 @@ En conjunto, la elección $r=3$ px ($\sim 176$~nm) coincide con el régimen en e
 \subsection{Ventana de la Corrección RLOESS}
 \label{sec:ventana_rloess}
  
-La imagen eléctrica reconstruida $E_{B}$ depende del tamaño de la ventana empleada por la función \texttt{smoothdata} con método \texttt{rloess} en la corrección de rayas verticales. El pipeline emplea una ventana de $50$ filas. Para validar esta elección se realizó un barrido sobre ocho valores de ventana entre $10$ y $300$ filas, manteniendo la configuración del pipeline en todas las demás etapas. Para cada ventana se evaluaron, sobre $E_{B}$ y sobre la máscara estricta $M_e$ del pipeline real, tres descriptores del perfil vertical y los cuatro descriptores de intensidad (media, desviación estándar, percentil 90 y gradiente medio).
+La imagen eléctrica reconstruida $I_B$ depende del tamaño de la ventana empleada por la función \texttt{smoothdata} con método \texttt{rloess} en la corrección de rayas verticales. El pipeline emplea una ventana de $50$ filas. Para validar esta elección se realizó un barrido sobre ocho valores de ventana entre $10$ y $300$ filas, manteniendo la configuración del pipeline en todas las demás etapas. Para cada ventana se evaluaron, sobre $I_B$ y sobre la máscara estricta $M_e$ del pipeline real, tres descriptores del perfil vertical y los cuatro descriptores de intensidad (media, desviación estándar, percentil 90 y gradiente medio).
  
 \subsubsection*{Comportamiento del perfil corregido}
  
 \begin{table}[H]
 \centering
-\caption{Estadísticos del barrido sobre la ventana RLOESS, evaluados sobre las 81 imágenes del dataset. La pendiente residual se reporta como el valor absoluto máximo del ajuste lineal del perfil de $E_{B}$.}
+\caption{Estadísticos del barrido sobre la ventana RLOESS, evaluados sobre las 81 imágenes del dataset. La pendiente residual se reporta como el valor absoluto máximo del ajuste lineal del perfil de $I_B$.}
 \label{tab:barrido_rloess}
 \small
 \begin{tabular}{cccccc}
@@ -449,7 +449,7 @@ $300$ & $0.0023$ & $29.54$ & $4.42$ & $3.99$ & $29.54$ \\
 \end{tabular}
 \end{table}
  
-La pendiente residual del perfil de $E_{B}$ es esencialmente invariante a la ventana (máximo absoluto del orden de $10^{-3}$~pm/nm en todo el rango barrido). Este resultado refleja una propiedad inherente del método: RLOESS preserva la tendencia lineal global del perfil al suavizar, por lo que la pendiente que sobrevive al ajuste posterior no depende de la elección de la ventana. La pendiente residual aporta evidencia de que el método funciona como debe (no introduce tendencia lineal espuria), pero no es informativa para identificar un punto óptimo dentro del barrido.
+La pendiente residual del perfil de $I_B$ es esencialmente invariante a la ventana (máximo absoluto del orden de $10^{-3}$~pm/nm en todo el rango barrido). Este resultado refleja una propiedad inherente del método: RLOESS preserva la tendencia lineal global del perfil al suavizar, por lo que la pendiente que sobrevive al ajuste posterior no depende de la elección de la ventana. La pendiente residual aporta evidencia de que el método funciona como debe (no introduce tendencia lineal espuria), pero no es informativa para identificar un punto óptimo dentro del barrido.
  
 El rango del perfil y el RMS de las rayas estimadas describen un balance entre dos regímenes opuestos. Para ventanas pequeñas ($v=10$), el ajuste RLOESS sigue muy de cerca el perfil original ---rango de tendencia $49$~pm, RMS de rayas $1.86$~pm--- indicando que parte de la variación que el método atribuye a la tendencia es en realidad ruido vertical. Para ventanas grandes ($v=300$), el ajuste captura solo la componente macroscópica del perfil ---rango $29$~pm--- y traslada al ``ruido de rayas'' una fracción mayor de las variaciones intermedias ---RMS $3.99$~pm---. El valor del pipeline ($v=50$) cae en el régimen intermedio: el rango de la tendencia preservada es $43$~pm, coherente con la mediana global reportada en la sección de descriptores, y la RMS de rayas es moderada ($2.71$~pm).
  
@@ -605,12 +605,12 @@ tres métodos reproduce el descenso monótono $2.2 \rightarrow 2.0 \rightarrow 1
 reportado en [4]: el pipeline arroja $2.33 \rightarrow 2.65 \rightarrow 2.58$
 (correlación de Spearman con el voltaje $\rho=-0.01$); el método de [4], sobre las
 imágenes en que es evaluable, $0.08 \rightarrow 0.54 \rightarrow 0.23$
-($\rho=-0.13$); y el umbral de [4] sobre $E_{seg}$, $0.96 \rightarrow 1.09
+($\rho=-0.13$); y el umbral de [4] sobre $I_{seg}$, $0.96 \rightarrow 1.09
 \rightarrow 1.86$ ($\rho=+0.16$).
  
 \subsubsection{Intensidad}
  
-Los descriptores de intensidad se computan sobre la señal eléctrica corregida $E_B$ (canal del segundo armónico, en metros calibrados por el sistema con la sensibilidad del 2.º armónico Amp2InvOLS) restringida a la máscara estricta $M_e$. La Figura~\ref{fig:res_desc_intensidad} muestra sus distribuciones.
+Los descriptores de intensidad se computan sobre la señal eléctrica corregida $I_B$ (canal del segundo armónico, en metros calibrados por el sistema con la sensibilidad del 2.º armónico Amp2InvOLS) restringida a la máscara estricta $M_e$. La Figura~\ref{fig:res_desc_intensidad} muestra sus distribuciones.
  
 \begin{figure}[H]
     \centering
@@ -666,7 +666,7 @@ El índice de percolación se concentra en valores bajos con mediana $0.062$ y r
  
 \subsubsection{Perfil de Gradiente}
  
-Los descriptores de perfil cuantifican la tendencia vertical residual de la señal eléctrica $E_B$ tras la corrección de rayas. La Figura~\ref{fig:res_desc_perfil} reporta la pendiente del ajuste lineal, el RMS del residuo respecto a ese ajuste y el rango total del perfil.
+Los descriptores de perfil cuantifican la tendencia vertical residual de la señal eléctrica $I_B$ tras la corrección de rayas. La Figura~\ref{fig:res_desc_perfil} reporta la pendiente del ajuste lineal, el RMS del residuo respecto a ese ajuste y el rango total del perfil.
  
 \begin{figure}[H]
     \centering

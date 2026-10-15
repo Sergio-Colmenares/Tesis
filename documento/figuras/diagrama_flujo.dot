@@ -2,9 +2,11 @@
 // Generar:  dot -Tpdf diagrama_flujo.dot -o diagrama_flujo.pdf
 //           dot -Tpng -Gdpi=200 diagrama_flujo.dot -o diagrama_flujo.png
 // Cajas blancas: etapas del pipeline. Notas grises: validación (Cap. 4).
+// Las entradas de cada grupo de descriptores se indican dentro de su caja
+// (una sola flecha entre bloques), para que las líneas no se crucen.
 digraph proceso {
     graph [rankdir=TB, fontname="DejaVu Sans", fontsize=13, nodesep=0.3, ranksep=0.32,
-           newrank=true, splines=spline, pad=0.2];
+           newrank=true, compound=true, splines=spline, pad=0.2];
     node  [shape=box, style="rounded,filled", fillcolor="#FFFFFF", fontname="DejaVu Sans",
            fontsize=10, color="#555555", penwidth=1, margin="0.12,0.06"];
     edge  [color="#444444", arrowsize=0.7, penwidth=1, fontname="DejaVu Sans"];
@@ -12,9 +14,9 @@ digraph proceso {
     // ------------------------------------------------------------------
     subgraph cluster_datos {
         label=<<B>1. Adquisición</B>>; style="rounded,filled"; fillcolor="#F2F2F2"; color="#BBBBBB";
-        ibw  [label=<81 imágenes KPFM (.ibw) — 1024×1024 px, 60×60 µm<BR/><FONT POINT-SIZE="9">9 condiciones (5/10/15 V × 10 Hz/1 kHz/100 kHz) × 3 réplicas × 3 posiciones</FONT>>];
-        elec [label=<Canal eléctrico <I>E</I><BR/><FONT POINT-SIZE="9">2.º armónico ∝ ∂C/∂z</FONT>>];
-        topo [label=<Canal topográfico <I>T</I>>];
+        ibw  [label=<81 mediciones EFM-2ω (.ibw): matrices de 1024×1024 sobre 60×60 µm<BR/><FONT POINT-SIZE="9">9 condiciones (5/10/15 V × 10 Hz/1 kHz/100 kHz) × 3 réplicas × 3 posiciones</FONT>>];
+        elec [label=<Canal eléctrico <I>I</I><SUB>raw</SUB><BR/><FONT POINT-SIZE="9">2.º armónico ∝ ∂C/∂z (unidades nominales)</FONT>>];
+        topo [label=<Canal topográfico <I>T</I><SUB>raw</SUB><BR/><FONT POINT-SIZE="9">nivelado de primer orden por línea</FONT>>];
         {rank=same; elec; topo;}
     }
     ibw -> elec; ibw -> topo;
@@ -22,90 +24,89 @@ digraph proceso {
     // ------------------------------------------------------------------
     subgraph cluster_pre {
         label=<<B>2. Preprocesamiento</B>>; style="rounded,filled"; fillcolor="#E8F0FA"; color="#9DB7D8";
-        norm  [label=<Normalización robusta<BR/><FONT POINT-SIZE="9">(x − mediana) / MAD</FONT>>];
-        cross [label=<Corrección de crosstalk topográfico<BR/><FONT POINT-SIZE="9"><I>E</I> = β<SUB>0</SUB> + β<SUB>1</SUB><I>T</I> + β<SUB>2</SUB> ∂<I>T</I>/∂x + β<SUB>3</SUB> ∂<I>T</I>/∂y   (mínimos cuadrados, global)</FONT>>];
-        syp1  [label=<Filtro sal y pimienta selectivo<BR/><FONT POINT-SIZE="9">mediana 5×5,  |R| &gt; 3σ̂,  σ̂ = mediana|R| / 0.6745</FONT>>];
-        fondo [label=<Corrección de fondo por fila<BR/><FONT POINT-SIZE="9">resta la mediana del 32–40 % de píxeles más oscuros</FONT>>];
-        syp2  [label=<Filtro de líneas horizontales<BR/><FONT POINT-SIZE="9">mediana vertical 5×1,  |R| &gt; 2σ̂</FONT>>];
-        eseg  [label=<Normalización P1–P99  →  <B><I>E</I><SUB>seg</SUB></B> ∈ [0, 1]>, fillcolor="#D6E4F5"];
-        norm -> cross -> syp1 -> fondo -> syp2 -> eseg;
+        norm  [label=<Normalización robusta  →  <I>Ĩ</I>, <I>T̃</I><BR/><FONT POINT-SIZE="9">(x − mediana) / MAD</FONT>>];
+        cross [label=<Corrección de crosstalk topográfico  →  <B><I>I</I><SUB>corr</SUB></B> = <I>Ĩ</I> − <I>Î</I><SUB>T</SUB><BR/><FONT POINT-SIZE="9"><I>Î</I><SUB>T</SUB> = β<SUB>0</SUB> + β<SUB>1</SUB><I>T̃</I> + β<SUB>2</SUB> ∂<I>T̃</I>/∂x + β<SUB>3</SUB> ∂<I>T̃</I>/∂y   (mínimos cuadrados, un ajuste por medición)</FONT>>];
+        syp1  [label=<Filtro sal y pimienta selectivo  →  <B><I>I</I><SUB>syp</SUB></B><BR/><FONT POINT-SIZE="9">mediana 5×5,  |R| &gt; 3σ̂<SUB>R</SUB>,  σ̂<SUB>R</SUB> = med|R| / 0.6745</FONT>>];
+        fondo [label=<Corrección de fondo por línea de barrido  →  <B><I>I</I><SUB>fondo</SUB></B><BR/><FONT POINT-SIZE="9">resta a cada fila la mediana de su tercio más oscuro (p = 40 − 20ρ %)</FONT>>];
+        syp2  [label=<Filtro de líneas horizontales  →  <B><I>I</I><SUB>clean</SUB></B><BR/><FONT POINT-SIZE="9">mediana vertical 5×1,  |R| &gt; 2σ̂<SUB>R</SUB></FONT>>];
+        iseg  [label=<Normalización P1–P99  →  <B><I>I</I><SUB>seg</SUB></B> ∈ [0, 1]>, fillcolor="#D6E4F5"];
+        norm -> cross -> syp1 -> fondo -> syp2 -> iseg;
     }
     elec -> norm; topo -> norm;
 
     // ------------------------------------------------------------------
     subgraph cluster_bin {
         label=<<B>3. Binarización multiescala</B>>; style="rounded,filled"; fillcolor="#EAF5EA"; color="#9CC79C";
-        ml   [label=<<B>M<SUB>L</SUB></B> local<BR/><FONT POINT-SIZE="9">núcleo gaussiano σ = 21 px<BR/>umbral 1.05·μ<SUB>G</SUB>  (s = 0.55)</FONT>>];
-        mg   [label=<<B>M<SUB>G</SUB></B> global<BR/><FONT POINT-SIZE="9">Otsu multinivel, 6 umbrales<BR/>se descarta la clase más oscura</FONT>>];
-        mr   [label=<<B>M<SUB>R</SUB></B> regional<BR/><FONT POINT-SIZE="9">núcleo gaussiano σ = 51 px<BR/>umbral 1.05·μ<SUB>G</SUB>  (s = 0.55)</FONT>>];
+        ml   [label=<<B>M<SUB>L</SUB></B> local<BR/><FONT POINT-SIZE="9">núcleo gaussiano σ<SUB>L</SUB> = 21 px<BR/><I>I</I><SUB>seg</SUB> &gt; 1.05·μ<SUB>σ</SUB>  (s = 0.55)</FONT>>];
+        mg   [label=<<B>M<SUB>G</SUB></B> global<BR/><FONT POINT-SIZE="9">Otsu multinivel, 6 umbrales (7 clases)<BR/>se descarta la clase más oscura</FONT>>];
+        mr   [label=<<B>M<SUB>R</SUB></B> regional<BR/><FONT POINT-SIZE="9">núcleo gaussiano σ<SUB>R</SUB> = 51 px<BR/><I>I</I><SUB>seg</SUB> &gt; 1.05·μ<SUB>σ</SUB>  (s = 0.55)</FONT>>];
         and  [label=<M<SUB>L</SUB> ∧ M<SUB>G</SUB> ∧ M<SUB>R</SUB>,  componentes ≥ 50 px>];
         dec  [label=<¿Cobertura<BR/>≥ 15 %?>, shape=diamond, style="filled", fillcolor="#FFF6D5", margin="0.02,0.02"];
-        resp [label=<Respaldo: M<SUB>e</SUB> = M<SUB>L</SUB><BR/><FONT POINT-SIZE="9">(componentes ≥ 50 px)</FONT>>, fillcolor="#FFF6D5"];
+        resp [label=<Respaldo: M<SUB>L</SUB><BR/><FONT POINT-SIZE="9">(componentes ≥ 50 px)</FONT>>, fillcolor="#FFF6D5"];
         me   [label=<Máscara estricta <B>M<SUB>e</SUB></B>>, fillcolor="#D2EBD2"];
-        v1   [label=<<B>Validación</B><BR/>barrido de 1 344 configuraciones<BR/>cobertura, N<SUB>c</SUB>, FN, CV<BR/>comparación con métodos más simples>,
+        v1   [label=<<B>Validación</B><BR/>barrido de configuraciones<BR/>cobertura, N<SUB>c</SUB>, FN, CV<BR/>comparación con métodos más simples>,
               shape=note, style="filled", fillcolor="#FAFAFA", color="#999999", fontsize=8, fontcolor="#444444"];
         {rank=same; ml; mg; mr;}
         {rank=same; and; v1;}
+        {rank=same; resp; me;}
         ml -> and; mg -> and; mr -> and;
         and -> dec;
-        dec -> me   [label="  sí", fontsize=9];
-        dec -> resp [label="  no", fontsize=9];
+        dec -> resp [label=" no", fontsize=9];
+        dec -> me   [label=" sí", fontsize=9];
         resp -> me;
         v1 -> and [style=dashed, color="#999999", arrowhead=none];
     }
-    eseg -> ml; eseg -> mg; eseg -> mr;
+    iseg -> ml; iseg -> mg; iseg -> mr;
 
     // ------------------------------------------------------------------
     subgraph cluster_rep {
         label=<<B>4. Representaciones de trabajo</B>>; style="rounded,filled"; fillcolor="#F6EDF8"; color="#C4A3CF";
         mmor [label=<Cierre morfológico, disco r = 3 px<BR/>→ <B>M<SUB>mor</SUB></B>>, fillcolor="#EAD9EF"];
         skel [label=<Esqueleto (bwskel) + poda de 5 px<BR/>→ <B>S</B>>, fillcolor="#EAD9EF"];
-        ebsy [label=<<I>E</I> − Ê<SUB>T</SUB>·MAD  (escala física)<BR/>+ sal y pimienta 5×5>];
-        eb   [label=<Corrección de rayas RLOESS (50 filas)<BR/>→ <B><I>E</I><SUB>B</SUB></B> [pm]>, fillcolor="#EAD9EF"];
+        ibsy [label=<<I>I</I><SUB>raw</SUB> − MAD·<I>Î</I><SUB>T</SUB>  (escala original)<BR/>+ sal y pimienta 5×5>];
+        ib   [label=<Corrección de rayas RLOESS (50 filas)<BR/>→ <B><I>I</I><SUB>B</SUB></B> [pm nominales]>, fillcolor="#EAD9EF"];
         v2   [label=<<B>Validación</B><BR/>barridos de radio, poda<BR/>y ventana RLOESS>,
               shape=note, style="filled", fillcolor="#FAFAFA", color="#999999", fontsize=8, fontcolor="#444444"];
-        {rank=same; mmor; ebsy;}
-        {rank=same; skel; eb; v2;}
+        {rank=same; mmor; ibsy;}
+        {rank=same; skel; ib; v2;}
         mmor -> skel;
-        ebsy -> eb;
-        v2 -> eb [style=dashed, color="#999999", arrowhead=none];
+        ibsy -> ib;
+        ib -> v2 [style=dashed, color="#999999", arrowhead=none];
     }
     me -> mmor;
-    cross -> ebsy [style=dashed, label=<  Ê<SUB>T</SUB>  (ajuste del crosstalk)>, fontsize=9];
+    cross -> ibsy [style=dashed, label=<  <I>Î</I><SUB>T</SUB>>, fontsize=9];
 
     // ------------------------------------------------------------------
     subgraph cluster_desc {
-        label=<<B>5. Extracción de 20 descriptores morfológicos</B>>; style="rounded,filled"; fillcolor="#FDF0E3"; color="#E2B27D";
+        label=<<B>5. Extracción de 20 descriptores</B>>; style="rounded,filled"; fillcolor="#FDF0E3"; color="#E2B27D";
         node [fontsize=9];
-        d1 [label=<<B>Distribución espacial</B><BR/>CNTD, CNTA, CNTS<BR/><FONT POINT-SIZE="8">100 líneas + ajuste lognormal</FONT>>];
-        d3 [label=<<B>Forma</B><BR/>elongación, área media,<BR/>área desv., tortuosidad>];
-        d4 [label=<<B>Orientación</B><BR/>ángulo dominante, coherencia<BR/><FONT POINT-SIZE="8">tensor de estructura</FONT>>];
-        d5 [label=<<B>Conectividad</B><BR/>cobertura, percolación,<BR/>longitud de red, fragmentos>];
-        d2 [label=<<B>Intensidad</B><BR/>media, desv., P90,<BR/>gradiente medio>];
-        d6 [label=<<B>Perfil</B><BR/>pendiente, RMS, rango>];
-        {rank=same; d1; d3; d4; d5; d2; d6;}
-        d1 -> d3 -> d4 -> d5 -> d2 -> d6 [style=invis];
-        csv [label=<<B>descriptores.csv</B>   (81 imágenes × 20 descriptores + condición de fabricación)>, fontsize=10, fillcolor="#FBE2C6"];
-        d1 -> csv; d2 -> csv; d3 -> csv; d4 -> csv; d5 -> csv; d6 -> csv;
+        d1 [label=<<B>Distribución espacial</B><BR/>CNTD, CNTA, CNTS<BR/><FONT POINT-SIZE="8" COLOR="#7A4E1D">sobre M<SUB>mor</SUB></FONT>>];
+        d4 [label=<<B>Orientación</B><BR/>ángulo dominante, coherencia<BR/><FONT POINT-SIZE="8" COLOR="#7A4E1D">sobre M<SUB>mor</SUB></FONT>>];
+        d3 [label=<<B>Forma</B><BR/>elongación, área media,<BR/>área desv., tortuosidad<BR/><FONT POINT-SIZE="8" COLOR="#7A4E1D">sobre M<SUB>mor</SUB> y S</FONT>>];
+        d5 [label=<<B>Conectividad</B><BR/>cobertura, percolación,<BR/>longitud de red, fragmentos<BR/><FONT POINT-SIZE="8" COLOR="#7A4E1D">sobre M<SUB>e</SUB>, M<SUB>mor</SUB> y S</FONT>>];
+        d2 [label=<<B>Intensidad</B><BR/>media, desv., P90,<BR/>gradiente medio<BR/><FONT POINT-SIZE="8" COLOR="#7A4E1D">sobre <I>I</I><SUB>B</SUB> en M<SUB>e</SUB></FONT>>];
+        d6 [label=<<B>Perfil</B><BR/>pendiente, RMS, rango<BR/><FONT POINT-SIZE="8" COLOR="#7A4E1D">sobre <I>I</I><SUB>B</SUB></FONT>>];
+        {rank=same; d1; d4; d3; d5; d2; d6;}
+        d1 -> d4 -> d3 -> d5 -> d2 -> d6 [style=invis];
+        csv [label=<<B>descriptores.csv</B>   (81 mediciones × 20 descriptores + condición de fabricación)>, fontsize=10, fillcolor="#FBE2C6"];
+        d1 -> csv; d4 -> csv; d3 -> csv; d5 -> csv; d2 -> csv; d6 -> csv;
     }
-    mmor -> d1; mmor -> d3; mmor -> d4; mmor -> d5;
-    skel -> d3; skel -> d5;
-    me   -> d5; me -> d2;
-    eb   -> d2; eb -> d6;
+    skel -> d3 [ltail=cluster_rep, lhead=cluster_desc];
 
     // ------------------------------------------------------------------
     subgraph cluster_ml {
         label=<<B>6. Análisis y aprendizaje automático</B>>; style="rounded,filled"; fillcolor="#E6F4F3"; color="#8FC6C1";
         se   [label=<Eficacia de apantallamiento medida<BR/><FONT POINT-SIZE="9">parámetros S → SE<SUB>R</SUB>, SE<SUB>A</SUB>, SE<SUB>T</SUB></FONT>>, fillcolor="#F2F2F2"];
         expl [label=<Análisis exploratorio<BR/><FONT POINT-SIZE="9">correlación |r| + agrupamiento jerárquico, PCA</FONT>>];
-        reg  [label=<Regresión interpretable  descriptores → SE<BR/><FONT POINT-SIZE="9">Ridge, Lasso, Random Forest — GroupKFold por réplica</FONT>>];
         cls  [label=<Clasificación exploratoria (fabricación)<BR/><FONT POINT-SIZE="9">Random Forest, LDA</FONT>>, style="rounded,dashed,filled"];
+        reg  [label=<Regresión interpretable  descriptores → SE<BR/><FONT POINT-SIZE="9">Ridge, Lasso, Random Forest — GroupKFold por réplica</FONT>>];
         imp  [label=<Importancia de descriptores<BR/><FONT POINT-SIZE="9">coeficientes, importancia por permutación</FONT>>];
         fis  [label=<<B>Interpretación física</B><BR/>morfología de la red ↔ SE<SUB>R</SUB>, SE<SUB>A</SUB>, SE<SUB>T</SUB>>, fillcolor="#CDEBE8"];
         {rank=same; expl; se;}
-        expl -> reg; se -> reg;
+        {rank=same; cls; reg;}
         expl -> cls [style=dashed];
-        reg -> imp; cls -> imp [style=dashed];
+        expl -> reg; se -> reg;
+        cls -> imp [style=dashed]; reg -> imp;
         imp -> fis;
     }
     csv -> expl;
