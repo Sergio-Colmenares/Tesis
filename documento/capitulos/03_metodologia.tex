@@ -30,9 +30,11 @@ Como primera etapa se elimina el crosstalk topográfico [8], una de las componen
 Ambos canales se normalizan primero de forma robusta, restando su mediana y dividiendo por su desviación absoluta mediana (MAD):
 
 \begin{equation}
+\begin{gathered}
 \tilde I(i,j) = \frac{I_{raw}(i,j) - \mathrm{med}(I_{raw})}{\mathrm{MAD}(I_{raw})}, \qquad
-\tilde T(i,j) = \frac{T_{raw}(i,j) - \mathrm{med}(T_{raw})}{\mathrm{MAD}(T_{raw})}, \qquad
+\tilde T(i,j) = \frac{T_{raw}(i,j) - \mathrm{med}(T_{raw})}{\mathrm{MAD}(T_{raw})}, \\[4pt]
 \mathrm{MAD}(x) = \mathrm{med}\left(\left|x - \mathrm{med}(x)\right|\right)
+\end{gathered}
 \label{eq:norm_robusta}
 \end{equation}
 
@@ -138,9 +140,11 @@ Tras la corrección de crosstalk y la limpieza de outliers, se ajusta el nivel d
 donde $\mathrm{MAD}(\mathbf{f}_i)$ es la desviación absoluta mediana de la fila, definida en (\ref{eq:norm_robusta}), y $P_{95}(\mathbf{f}_i)$ y $P_{5}(\mathbf{f}_i)$ son sus percentiles 95 y 5. Este índice define de forma adaptativa el percentil $q_i$ (en porcentaje) de píxeles utilizados para estimar el fondo, acotado entre el 25~\% y el 45~\%. El nivel de fondo $b_i$ de la fila es la mediana de los píxeles cuyo valor no supera el percentil $P_{q_i}(\mathbf{f}_i)$, y se resta a la fila completa:
 
 \begin{equation}
-q_i = \min\left(45,\ \max\left(25,\ 40 - 20\,\rho_i\right)\right), \qquad
-b_i = \mathrm{med}\left\{ f_i(j) : f_i(j) \le P_{q_i}(\mathbf{f}_i) \right\}, \qquad
+\begin{gathered}
+q_i = \min\left(45,\ \max\left(25,\ 40 - 20\,\rho_i\right)\right), \\[4pt]
+b_i = \mathrm{med}\left\{ f_i(j) : f_i(j) \le P_{q_i}(\mathbf{f}_i) \right\}, \\[4pt]
 I_{fondo}(i,j) = f_i(j) - b_i
+\end{gathered}
 \label{eq:fondo}
 \end{equation}
 
