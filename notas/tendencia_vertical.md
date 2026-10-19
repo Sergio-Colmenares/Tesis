@@ -20,3 +20,32 @@ Datos: `resultados/tendencia_vertical.csv` (81 mediciones). Perfiles calculados 
   - Los descriptores de **perfil** (pendiente, residuo y rango) miden sobre todo este artefacto.
   - Los de **intensidad** lo incluyen en parte.
 - **Efecto de campaña:** la intensidad del artefacto difiere entre campañas, lo que puede contribuir al efecto de campaña en los descriptores de `I_B`.
+
+## Opciones para la imagen eléctrica reconstruida `I_B` (pendiente de decisión)
+
+**Construcción actual:**
+1. Se resta el ajuste de crosstalk en la escala original.
+2. Se aplica el filtro SyP 5×5.
+3. Se calcula el perfil vertical p(i), la mediana de cada fila.
+4. Se suaviza con RLOESS (50 filas) para obtener la tendencia p̃(i).
+5. Se resta a cada fila solo la diferencia p(i) − p̃(i), es decir, las rayas.
+
+La tendencia vertical se conserva a propósito, pero es instrumental (ver arriba).
+
+**A. Dejar `I_B` como está y declararlo como limitación.**
+- Sin recálculo.
+- Los 3 descriptores de perfil miden el instrumento, y los 4 de intensidad lo incluyen en parte.
+
+**B. Corregir también la tendencia y retirar los descriptores de perfil (recomendada).**
+- Se resta a cada fila su nivel de fondo completo, con el mismo estimador de 3.1.3: la mediana del tercio menos intenso de la fila.
+- El grupo «Perfil» desaparece y se recalculan los 4 descriptores de intensidad.
+- Si hubiera un gradiente vertical real, también se elimina, porque no se puede separar de la deriva temporal.
+- Decisión interna:
+  - **(B1)** conservar el nivel global, con intensidades en escala nominal absoluta;
+  - **(B2)** restar el fondo completo, de modo que las intensidades midan el contraste de la red sobre el polímero (cancela el desplazamiento de cada sesión, pero no el factor de escala).
+
+**C. Corregir solo el transitorio inicial** (*creep* en las primeras líneas).
+- Conserva más señal.
+- Requiere definir el fin del transitorio en cada medición y no elimina la deriva del resto del barrido.
+
+**Pendiente:** después de decidir, reescribir de forma explícita la narración de `I_B` en la Sección 3.1.7.
