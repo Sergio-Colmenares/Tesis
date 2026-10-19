@@ -195,14 +195,14 @@ Con $s = 0.55$, $\gamma = 1.05$: un píxel se clasifica como red si su intensida
 
 \subsubsection{Binarización Global}
 
-Como complemento, se realiza una binarización global basada en rangos de intensidad mediante una variación del método de Otsu [9] extendida a múltiples clases (\texttt{multithresh}). Dado que la formulación original de dos clases no captura los distintos grupos de intensidades de CNTs presentes en la imagen, se aplica un análisis multinivel que calcula $K = 6$ umbrales $t_1 < \dots < t_6$. Con $t_0 = 0$ y $t_7 = 1$, los umbrales dividen los píxeles de la medición en siete clases según su valor de $I_{seg}$, $\mathcal{C}_k = \{(i,j) : t_k \le I_{seg}(i,j) < t_{k+1}\}$ para $k = 0, \dots, 6$ (la última clase incluye también los píxeles con $I_{seg} = 1$), y se eligen de modo que maximicen la varianza entre clases:
+Como complemento, se realiza una binarización global basada en rangos de intensidad mediante una variación del método de Otsu [9] extendida a múltiples clases (\texttt{multithresh}). Dado que la formulación original de dos clases no captura los distintos grupos de intensidades de CNTs presentes en la imagen, se aplica un análisis multinivel que calcula $K = 6$ umbrales $t_1 < \dots < t_6$. Con $t_0 = 0$ y $t_7 = 1$, los umbrales dividen los píxeles de la medición en siete clases según su valor de $I_{seg}$, $C_k = \{(i,j) : t_k \le I_{seg}(i,j) < t_{k+1}\}$ para $k = 0, \dots, 6$ (la última clase incluye también los píxeles con $I_{seg} = 1$), y se eligen de modo que maximicen la varianza entre clases:
 
 \begin{equation}
 (t_1, \dots, t_6) = \arg\max_{t_1 < \dots < t_6} \sum_{k=0}^{K} \omega_k\,(\mu_k - \mu_{tot})^2
 \label{eq:otsu}
 \end{equation}
 
-donde $\omega_k$ es la fracción de píxeles de la medición que pertenecen a la clase $\mathcal{C}_k$, $\mu_k$ es la intensidad media de esos píxeles y $\mu_{tot}$ es la intensidad media de toda la medición. La función \texttt{multithresh} resuelve esta maximización sobre el histograma de $I_{seg}$ con 256 niveles, por lo que los umbrales toman valores múltiplos de $1/255$. La primera clase, que agrupa los valores más bajos de $I_{seg}$ y corresponde a las zonas más oscuras del fondo polimérico, se descarta de la máscara resultante $M_G$:
+donde $\omega_k$ es la fracción de píxeles de la medición que pertenecen a la clase $C_k$, $\mu_k$ es la intensidad media de esos píxeles y $\mu_{tot}$ es la intensidad media de toda la medición. La función \texttt{multithresh} resuelve esta maximización sobre el histograma de $I_{seg}$ con 256 niveles, por lo que los umbrales toman valores múltiplos de $1/255$. La primera clase, que agrupa los valores más bajos de $I_{seg}$ y corresponde a las zonas más oscuras del fondo polimérico, se descarta de la máscara resultante $M_G$:
 
 \begin{equation}
 M_G(i,j) = \begin{cases} 1, & I_{seg}(i,j) \ge t_1 \\ 0, & \text{en otro caso} \end{cases}
@@ -220,17 +220,17 @@ La binarización regional $M_R$ se construye con el mismo principio que la local
 Cada binarización ofrece resultados consistentes pese a la heterogeneidad del dataset, pero presenta limitaciones complementarias: la local aporta definición a costa de ruido granular, la global secciona bien las capas de intensidad pero con baja definición, y la regional opera como filtro espacial intermedio. Las tres máscaras se integran mediante una conjunción lógica:
 
 \begin{equation}
-M_{e} = \mathcal{A}_{50}\Big(\mathcal{A}_{50}(M_G) \,\wedge\, M_R \,\wedge\, M_L\Big)
+M_{e} = A_{50}\Big(A_{50}(M_G) \,\wedge\, M_R \,\wedge\, M_L\Big)
 \label{eq:bin_final}
 \end{equation}
 
-donde $\wedge$ es la conjunción lógica píxel a píxel (para dos máscaras $M_1$ y $M_2$, $(M_1 \wedge M_2)(i,j) = 1$ solo si $M_1(i,j) = 1$ y $M_2(i,j) = 1$). Solo los píxeles clasificados como red en las tres binarizaciones forman parte de la máscara final $M_e$. Adicionalmente, se impone una condición de tamaño mínimo por componente conexa. Una componente conexa es un conjunto máximo de píxeles de valor 1 en el que cualquier par puede unirse por una cadena de píxeles de valor 1 vecinos entre sí, considerando vecinos a los 8 píxeles que comparten un lado o una esquina. El operador $\mathcal{A}_{50}$ (\texttt{bwareaopen}) elimina, poniéndolas en 0, las componentes conexas de menos de 50 píxeles ($\approx 0.17$~$\mu$m$^2$), y se aplica tanto a $M_G$ antes de la conjunción como a la máscara resultante.
+donde $\wedge$ es la conjunción lógica píxel a píxel (para dos máscaras $M_1$ y $M_2$, $(M_1 \wedge M_2)(i,j) = 1$ solo si $M_1(i,j) = 1$ y $M_2(i,j) = 1$). Solo los píxeles clasificados como red en las tres binarizaciones forman parte de la máscara final $M_e$. Adicionalmente, se impone una condición de tamaño mínimo por componente conexa. Una componente conexa es un conjunto máximo de píxeles de valor 1 en el que cualquier par puede unirse por una cadena de píxeles de valor 1 vecinos entre sí, considerando vecinos a los 8 píxeles que comparten un lado o una esquina. El operador $A_{50}$ (\texttt{bwareaopen}) elimina, poniéndolas en 0, las componentes conexas de menos de 50 píxeles ($\approx 0.17$~$\mu$m$^2$), y se aplica tanto a $M_G$ antes de la conjunción como a la máscara resultante.
 
 La elección de la conjunción de las tres escalas frente a otras alternativas basadas en estas máscaras se valida empíricamente sobre las 81 imágenes del dataset más adelante (Sección~\ref{sec:metodos_alternativos}).
 
 \subsubsection{Activación Local de Respaldo}
 
-Cuando la cobertura de la máscara integrada, $c = \frac{1}{N^2}\sum_{i,j} M_e(i,j)$, es decir, la fracción de píxeles clasificados como red, cae por debajo del 15~\%, se sustituye $M_e$ por la binarización local, $M_e = \mathcal{A}_{50}(M_L)$, con los mismos parámetros empleados en la conjunción. Este mecanismo no introduce un método alternativo con parámetros propios sino que reutiliza el componente local del pipeline. La selección del umbral $0.15$ corresponde a un límite inferior de cobertura observado en el dataset cuando la conjunción opera con normalidad; del conjunto de 81 imágenes, solo una alcanza dicho umbral en la configuración del pipeline, y su comportamiento se discute más adelante.
+Cuando la cobertura de la máscara integrada, $c = \frac{1}{N^2}\sum_{i,j} M_e(i,j)$, es decir, la fracción de píxeles clasificados como red, cae por debajo del 15~\%, se sustituye $M_e$ por la binarización local, $M_e = A_{50}(M_L)$, con los mismos parámetros empleados en la conjunción. Este mecanismo no introduce un método alternativo con parámetros propios sino que reutiliza el componente local del pipeline. La selección del umbral $0.15$ corresponde a un límite inferior de cobertura observado en el dataset cuando la conjunción opera con normalidad; del conjunto de 81 imágenes, solo una alcanza dicho umbral en la configuración del pipeline, y su comportamiento se discute más adelante.
 
 \subsection{Representaciones de Trabajo}
 \label{sec:met_representaciones}
