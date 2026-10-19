@@ -78,7 +78,7 @@ I_{corr}(i,j) = \tilde I(i,j) - \hat I_T(i,j)
 \label{eq:crosstalk_resta}
 \end{equation}
 
-Por construcción de los mínimos cuadrados, $I_{corr}$ tiene media nula y correlación nula con $\tilde T$ y con sus derivadas, por lo que la correlación posterior a la corrección no mide su efectividad. Esta se evalúa visualmente sobre las mediciones con crosstalk más marcado (Capítulo 4).
+Por construcción de los mínimos cuadrados, $I_{corr}$ tiene media nula y correlación nula con $\tilde T$ y con sus derivadas, por lo que la correlación posterior a la corrección no mide su efectividad. Por esta razón, el efecto de la corrección se examina visualmente, comparando para una misma medición el canal topográfico, el canal eléctrico normalizado $\tilde I$ y el canal corregido $I_{corr}$, con atención a las huellas topográficas, como bordes de rayones y partículas superficiales.
 
 \subsection{Filtrado de Ruido Impulsivo}
 \label{sec:met_syp}
@@ -230,7 +230,7 @@ donde $\wedge$ es la conjunción lógica píxel a píxel (para dos máscaras $M_
 
 \subsubsection{Activación Local de Respaldo}
 
-Cuando la cobertura de la máscara integrada, $c = \frac{1}{N^2}\sum_{i,j} M_e(i,j)$, es decir, la fracción de píxeles clasificados como red, cae por debajo del 15~\%, se sustituye $M_e$ por la binarización local, $M_e = A_{50}(M_L)$, con los mismos parámetros empleados en la conjunción. Este mecanismo no introduce un método alternativo con parámetros propios sino que reutiliza el componente local del pipeline. La selección del umbral $0.15$ corresponde a un límite inferior de cobertura observado en el dataset cuando la conjunción opera con normalidad; del conjunto de 81 imágenes, solo una alcanza dicho umbral en la configuración del pipeline, y su comportamiento se discute más adelante.
+Cuando la cobertura de la máscara integrada, $c = \frac{1}{N^2}\sum_{i,j} M_e(i,j)$, es decir, la fracción de píxeles clasificados como red, cae por debajo del 15~\%, se sustituye $M_e$ por la binarización local, $M_e = A_{50}(M_L)$, con los mismos parámetros empleados en la conjunción. Este mecanismo no introduce un método alternativo con parámetros propios sino que reutiliza el componente local del pipeline. El umbral de $0.15$ se fijó a partir de la inspección de las coberturas obtenidas por la conjunción, como un límite inferior por debajo del cual la máscara deja de representar la red visible en $I_{seg}$; de este modo, el respaldo actúa únicamente en las mediciones en las que la conjunción resulta excesivamente restrictiva.
 
 \subsection{Representaciones de Trabajo}
 \label{sec:met_representaciones}
