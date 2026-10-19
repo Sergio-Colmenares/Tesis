@@ -1,93 +1,95 @@
 // Diagrama de flujo del proceso completo, versión horizontal en blanco y negro.
 // Generar:  dot -Tpdf diagrama_flujo_bn.dot -o diagrama_flujo_bn.pdf
 //           dot -Tpng -Gdpi=200 diagrama_flujo_bn.dot -o diagrama_flujo_bn.png
-// Cada bloque es una columna; los bloques avanzan de izquierda a derecha y, dentro de cada uno, las etapas de arriba hacia abajo.
+// Símbolos de diagrama de flujo: paralelogramo = datos de entrada o salida,
+// rectángulo = operación, rombo = decisión, rectángulo redondeado = inicio/fin.
+// Cada bloque es una columna; los bloques avanzan de izquierda a derecha y,
+// dentro de cada uno, las etapas de arriba hacia abajo.
 digraph proceso_bn {
-    graph [rankdir=TB, fontname="DejaVu Sans", fontsize=12, nodesep=0.35, ranksep=0.28,
+    graph [rankdir=TB, fontname="DejaVu Sans", fontsize=12, nodesep=0.30, ranksep=0.30,
            newrank=true, compound=true, splines=ortho, pad=0.2, bgcolor="white"];
-    node  [shape=box, style="rounded", color="black", fontcolor="black", fontname="DejaVu Sans",
-           fontsize=9, penwidth=0.9, margin="0.10,0.05", width=2.3];
+    node  [shape=box, style="solid", color="black", fontcolor="black", fontname="DejaVu Sans",
+           fontsize=9, penwidth=0.9, margin="0.10,0.05", width=2.2];
     edge  [color="black", arrowsize=0.6, penwidth=0.8];
 
-    // ------------------------------------------------------------------
     subgraph cluster_1 {
-        label=<<B>1. Datos</B>>; style="rounded"; color="black"; penwidth=0.8;
-        a1 [label=<81 mediciones EFM-2ω<BR/><FONT POINT-SIZE="8">9 condiciones × 3 réplicas × 3 posiciones<BR/>matrices de 1024 × 1024 (60 × 60 µm)</FONT>>];
-        a2 [label=<Canal eléctrico <I>I</I><SUB>raw</SUB><BR/><FONT POINT-SIZE="8">señal ∝ ∂C/∂z, unidades nominales</FONT>>];
-        a3 [label=<Canal topográfico <I>T</I><SUB>raw</SUB><BR/><FONT POINT-SIZE="8">altura de la superficie</FONT>>];
-        {rank=same; a2; a3;}
-        a1 -> a2; a1 -> a3;
+        label=<<B>1. Adquisición</B>>; style="solid"; color="black"; penwidth=0.8;
+        a1 [shape=box, style="rounded", label=<81 mediciones EFM-2ω (.ibw)<BR/><FONT POINT-SIZE="8">1024 × 1024, 60 × 60 µm</FONT>>];
+        a2 [shape=parallelogram, width=1.9, label=<Canal eléctrico<BR/><I>I</I><SUB>raw</SUB>>];
+        a3 [shape=parallelogram, width=1.9, label=<Canal topográfico<BR/><I>T</I><SUB>raw</SUB>>];
+        a1 -> a2;
+        a2 -> a3 [style=invis];
+        a1 -> a3;
     }
 
-    // ------------------------------------------------------------------
     subgraph cluster_2 {
-        label=<<B>2. Limpieza del canal eléctrico</B>>; style="rounded"; color="black"; penwidth=0.8;
-        b1 [label=<Quitar la huella de la topografía<BR/><FONT POINT-SIZE="8">ajuste lineal global (crosstalk) → <I>I</I><SUB>corr</SUB></FONT>>];
-        b2 [label=<Quitar puntos aislados<BR/><FONT POINT-SIZE="8">mediana selectiva 5 × 5 → <I>I</I><SUB>syp</SUB></FONT>>];
-        b3 [label=<Igualar el nivel de cada línea<BR/><FONT POINT-SIZE="8">resta del fondo por fila → <I>I</I><SUB>fondo</SUB></FONT>>];
-        b4 [label=<Quitar líneas sueltas<BR/><FONT POINT-SIZE="8">mediana selectiva vertical 5 × 1 → <I>I</I><SUB>clean</SUB></FONT>>];
-        b5 [label=<Escalar a [0, 1]<BR/><FONT POINT-SIZE="8">percentiles 1 y 99 → <I>I</I><SUB>seg</SUB></FONT>>, penwidth=1.6];
+        label=<<B>2. Preprocesamiento</B>>; style="solid"; color="black"; penwidth=0.8;
+        b1 [label=<Corrección de crosstalk topográfico<BR/><FONT POINT-SIZE="8">→ <I>I</I><SUB>corr</SUB></FONT>>];
+        b2 [label=<Filtro sal y pimienta 5 × 5<BR/><FONT POINT-SIZE="8">→ <I>I</I><SUB>syp</SUB></FONT>>];
+        b3 [label=<Corrección de fondo por línea<BR/><FONT POINT-SIZE="8">→ <I>I</I><SUB>fondo</SUB></FONT>>];
+        b4 [label=<Filtro de líneas horizontales 5 × 1<BR/><FONT POINT-SIZE="8">→ <I>I</I><SUB>clean</SUB></FONT>>];
+        b5 [label=<Normalización P1–P99<BR/><FONT POINT-SIZE="8">→ <I>I</I><SUB>seg</SUB></FONT>>];
         b1 -> b2 -> b3 -> b4 -> b5;
     }
 
-    // ------------------------------------------------------------------
     subgraph cluster_3 {
-        label=<<B>3. Separación red / fondo</B>>; style="rounded"; color="black"; penwidth=0.8;
-        c1 [width=1.2, label=<Umbral local<BR/><FONT POINT-SIZE="8">vecindad σ = 21 px → <I>M</I><SUB>L</SUB></FONT>>];
-        c2 [width=1.2, label=<Umbral regional<BR/><FONT POINT-SIZE="8">vecindad σ = 51 px → <I>M</I><SUB>R</SUB></FONT>>];
-        c3 [width=1.2, label=<Umbral global<BR/><FONT POINT-SIZE="8">Otsu multinivel → <I>M</I><SUB>G</SUB></FONT>>];
-        c4 [label=<Coincidencia de los tres<BR/><FONT POINT-SIZE="8">y retiro de manchas &lt; 50 px</FONT>>];
-        c5 [label=<¿Cubre ≥ 15 %?>, shape=diamond, style="", width=1.6, margin="0.02,0.02"];
-        c6 [label=<Respaldo: solo umbral local>, style="rounded,dashed"];
-        c7 [label=<Máscara de la red <I>M</I><SUB>e</SUB>>, penwidth=1.6];
+        label=<<B>3. Binarización</B>>; style="solid"; color="black"; penwidth=0.8;
+        c1 [width=1.0, label=<Local<BR/><I>M</I><SUB>L</SUB>>];
+        c2 [width=1.0, label=<Regional<BR/><I>M</I><SUB>R</SUB>>];
+        c3 [width=1.0, label=<Global<BR/><I>M</I><SUB>G</SUB>>];
+        c4 [label=<Conjunción y área mínima<BR/><FONT POINT-SIZE="8"><I>M</I><SUB>L</SUB> ∧ <I>M</I><SUB>R</SUB> ∧ <I>M</I><SUB>G</SUB>, ≥ 50 px</FONT>>];
+        c5 [shape=diamond, width=1.5, margin="0.02,0.02", label=<Cobertura<BR/>≥ 15 %>];
+        c6 [width=1.2, label=<Respaldo<BR/><I>M</I><SUB>L</SUB>>];
+        c7 [shape=parallelogram, width=1.6, label=<Máscara estricta<BR/><I>M</I><SUB>e</SUB>>];
         {rank=same; c1; c2; c3;}
         c1 -> c2 -> c3 [style=invis];
         c1 -> c4; c2 -> c4; c3 -> c4;
         c4 -> c5;
         {rank=same; c6; c7;}
-        c5 -> c7 [xlabel="sí", fontsize=8];
-        c5 -> c6 [xlabel="no", fontsize=8];
+        c5 -> c6 [xlabel="no ", fontsize=8];
+        c5 -> c7 [xlabel=" sí", fontsize=8];
         c6 -> c7;
     }
 
-    // ------------------------------------------------------------------
     subgraph cluster_4 {
-        label=<<B>4. Representaciones</B>>; style="rounded"; color="black"; penwidth=0.8;
-        d1 [label=<Unir cortes cercanos<BR/><FONT POINT-SIZE="8">cierre con disco r = 3 px → <I>M</I><SUB>mor</SUB></FONT>>];
-        d2 [label=<Esqueleto de la red<BR/><FONT POINT-SIZE="8">líneas de 1 px, poda de 5 px → <I>S</I></FONT>>];
-        d3 [label=<Imagen eléctrica en escala original<BR/><FONT POINT-SIZE="8">sin crosstalk (ajuste de la etapa 2) ni rayas → <I>I</I><SUB>B</SUB></FONT>>];
+        label=<<B>4. Representaciones de trabajo</B>>; style="solid"; color="black"; penwidth=0.8;
+        d1 [label=<Cierre morfológico, r = 3 px<BR/><FONT POINT-SIZE="8">→ <I>M</I><SUB>mor</SUB></FONT>>];
+        d2 [label=<Esqueletización y poda<BR/><FONT POINT-SIZE="8">→ <I>S</I></FONT>>];
+        d3 [label=<Reconstrucción del canal eléctrico<BR/><FONT POINT-SIZE="8"><I>I</I><SUB>raw</SUB> − <I>Î</I><SUB>T</SUB>, SyP, RLOESS → <I>I</I><SUB>B</SUB></FONT>>];
         d1 -> d2;
         d2 -> d3 [style=invis];
     }
 
-    // ------------------------------------------------------------------
     subgraph cluster_5 {
-        label=<<B>5. Descriptores (20)</B>>; style="rounded"; color="black"; penwidth=0.8;
-        e1 [label=<Distribución espacial<BR/><FONT POINT-SIZE="8">CNTD, CNTA, CNTS · usa <I>M</I><SUB>mor</SUB></FONT>>];
-        e2 [label=<Orientación<BR/><FONT POINT-SIZE="8">ángulo dominante, coherencia · usa <I>M</I><SUB>mor</SUB></FONT>>];
-        e3 [label=<Forma<BR/><FONT POINT-SIZE="8">área, elongación, tortuosidad · usa <I>M</I><SUB>mor</SUB>, <I>S</I></FONT>>];
-        e4 [label=<Conectividad<BR/><FONT POINT-SIZE="8">cobertura, percolación, longitud, fragmentos<BR/>usa <I>M</I><SUB>e</SUB>, <I>M</I><SUB>mor</SUB>, <I>S</I></FONT>>];
-        e5 [label=<Intensidad<BR/><FONT POINT-SIZE="8">media, desviación, P90, gradiente · usa <I>I</I><SUB>B</SUB> en <I>M</I><SUB>e</SUB></FONT>>];
-        e6 [label=<Perfil vertical<BR/><FONT POINT-SIZE="8">pendiente, residuo, rango · usa <I>I</I><SUB>B</SUB></FONT>>];
-        e1 -> e2 -> e3 -> e4 -> e5 -> e6 [style=invis];
+        label=<<B>5. Extracción de descriptores</B><BR/><FONT POINT-SIZE="9">tabla de 81 mediciones × 20 descriptores</FONT>>; style="solid"; color="black"; penwidth=0.8;
+        node [width=1.7];
+        e1 [label=<Distribución espacial<BR/><FONT POINT-SIZE="8"><I>M</I><SUB>mor</SUB></FONT>>];
+        e2 [label=<Orientación<BR/><FONT POINT-SIZE="8"><I>M</I><SUB>mor</SUB></FONT>>];
+        e3 [label=<Forma<BR/><FONT POINT-SIZE="8"><I>M</I><SUB>mor</SUB>, <I>S</I></FONT>>];
+        e4 [label=<Conectividad<BR/><FONT POINT-SIZE="8"><I>M</I><SUB>e</SUB>, <I>M</I><SUB>mor</SUB>, <I>S</I></FONT>>];
+        e5 [label=<Intensidad<BR/><FONT POINT-SIZE="8"><I>I</I><SUB>B</SUB>, <I>M</I><SUB>e</SUB></FONT>>];
+        e6 [label=<Perfil<BR/><FONT POINT-SIZE="8"><I>I</I><SUB>B</SUB></FONT>>];
+        {rank=same; e1; e2;}
+        {rank=same; e3; e4;}
+        {rank=same; e5; e6;}
+        e1 -> e2 [style=invis];  e3 -> e4 [style=invis];  e5 -> e6 [style=invis];
+        e1 -> e3 [style=invis];  e3 -> e5 [style=invis];
     }
 
-    // ------------------------------------------------------------------
     subgraph cluster_6 {
-        label=<<B>6. Análisis</B>>; style="rounded"; color="black"; penwidth=0.8;
-        f1 [label=<Tabla de descriptores<BR/><FONT POINT-SIZE="8">81 mediciones × 20 descriptores</FONT>>];
-        f2 [label=<Exploración<BR/><FONT POINT-SIZE="8">correlaciones, agrupamiento, PCA</FONT>>];
-        f3 [label=<Modelos interpretables<BR/><FONT POINT-SIZE="8">descriptores → apantallamiento (SE)</FONT>>];
-        f4 [label=<Interpretación física<BR/><FONT POINT-SIZE="8">morfología de la red ↔ SE</FONT>>, penwidth=1.6];
+        label=<<B>6. Análisis</B>>; style="solid"; color="black"; penwidth=0.8;
+        f1 [label=<Análisis exploratorio<BR/><FONT POINT-SIZE="8">correlación, agrupamiento, PCA</FONT>>];
+        f2 [label=<Modelos interpretables<BR/><FONT POINT-SIZE="8">descriptores → SE</FONT>>];
+        f3 [label=<Importancia de descriptores>];
+        f4 [shape=box, style="rounded", label=<Interpretación física>];
         f1 -> f2 -> f3 -> f4;
     }
 
-    // ------------------------------------------------------------------
-    // Conexiones entre bloques
+    // Conexiones entre bloques (horizontales, por la fila superior)
     {rank=same; a1; b1; c1; d1; e1; f1;}
     a1 -> b1 [ltail=cluster_1, lhead=cluster_2];
     b1 -> c1 [ltail=cluster_2, lhead=cluster_3];
     c3 -> d1 [ltail=cluster_3, lhead=cluster_4];
     d1 -> e1 [ltail=cluster_4, lhead=cluster_5];
-    e1 -> f1 [ltail=cluster_5, lhead=cluster_6];
+    e2 -> f1 [ltail=cluster_5, lhead=cluster_6];
 }
