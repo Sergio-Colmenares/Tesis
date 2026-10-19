@@ -78,7 +78,15 @@ I_{corr}(i,j) = \tilde I(i,j) - \hat I_T(i,j)
 \label{eq:crosstalk_resta}
 \end{equation}
 
-Por construcción de los mínimos cuadrados, $I_{corr}$ tiene media nula y correlación nula con $\tilde T$ y con sus derivadas, por lo que la correlación posterior a la corrección no mide su efectividad. Por esta razón, el efecto de la corrección se examina visualmente, comparando para una misma medición el canal topográfico, el canal eléctrico normalizado $\tilde I$ y el canal corregido $I_{corr}$, con atención a las huellas topográficas, como bordes de rayones y partículas superficiales.
+Por construcción de los mínimos cuadrados, $I_{corr}$ tiene media nula y correlación nula con $\tilde T$ y con sus derivadas, por lo que la correlación posterior a la corrección no mide su efectividad. Por esta razón, el efecto de la corrección se examina visualmente, comparando para una misma medición el canal topográfico, el canal eléctrico normalizado $\tilde I$ y el canal corregido $I_{corr}$, con atención a las huellas topográficas, como bordes de rayones y partículas superficiales. La Figura~\ref{fig:met_crosstalk} muestra esta comparación para la medición 0a-5.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{metodologia/met_crosstalk.pdf}
+\caption{Corrección de crosstalk topográfico en la medición 0a-5. (a) Canal topográfico normalizado $\tilde T$, en escala de grises. (b) Canal eléctrico normalizado $\tilde I$. (c) Canal corregido $I_{corr}$. Los paneles (b) y (c) comparten los límites de color, fijados en los percentiles 1 y 99 de $\tilde I$.}
+\label{fig:met_crosstalk}
+\end{figure}
+
 
 \subsection{Filtrado de Ruido Impulsivo}
 \label{sec:met_syp}
@@ -123,7 +131,15 @@ X(i,j), & \text{en otro caso}
 
 De este modo, a diferencia de un filtro de mediana convencional, solo se modifican los píxeles anómalos y el resto de la matriz conserva su resolución.
 
-En esta etapa el filtro se aplica con $X = I_{corr}$, inmediatamente después de la corrección de crosstalk, con ventana $5\times5$ y umbral $\lambda=3$, para eliminar outliers tipo sal y pimienta (SyP); el resultado se denota $I_{syp}$. El mismo filtro se reutiliza más adelante, con otra ventana y otro umbral, para eliminar líneas impulsivas horizontales (Sección~\ref{sec:met_lineas}).
+En esta etapa el filtro se aplica con $X = I_{corr}$, inmediatamente después de la corrección de crosstalk, con ventana $5\times5$ y umbral $\lambda=3$, para eliminar outliers tipo sal y pimienta (SyP); el resultado se denota $I_{syp}$. El mismo filtro se reutiliza más adelante, con otra ventana y otro umbral, para eliminar líneas impulsivas horizontales (Sección~\ref{sec:met_lineas}). La Figura~\ref{fig:met_syp} ilustra esta etapa sobre la medición 2b-1.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{metodologia/met_syp.pdf}
+\caption{Filtrado de ruido impulsivo en la medición 2b-1. (a) Matriz de entrada $I_{corr}$. (b) Resultado $I_{syp}$. (c) Píxeles reemplazados por el valor del filtro de mediana. Los paneles (a) y (b) comparten los límites de color.}
+\label{fig:met_syp}
+\end{figure}
+
 
 \subsection{Corrección de Fondo por Línea de Barrido}
 \label{sec:met_fondo}
@@ -146,12 +162,28 @@ I_{fondo}(i,j) = f_i(j) - b_i
 \label{eq:fondo}
 \end{equation}
 
-Como $\rho_i \ge 0$, el percentil nunca supera el 40~\%, y la cota inferior solo se alcanzaría con $\rho_i \ge 0.75$. Para las distribuciones de intensidad esperables en una fila (fondo con ruido y una fracción de CNTs de hasta la mitad de la fila), $q_i$ queda aproximadamente entre el 32~\% y el 39~\%: el fondo de cada fila se estima con aproximadamente el tercio de menor intensidad de sus píxeles. El percentil disminuye en las filas con una fracción alta de CNTs (distribución bimodal), en las que un percentil mayor incluiría píxeles de la red en la estimación del fondo.
+Como $\rho_i \ge 0$, el percentil nunca supera el 40~\%, y la cota inferior solo se alcanzaría con $\rho_i \ge 0.75$. Para las distribuciones de intensidad esperables en una fila (fondo con ruido y una fracción de CNTs de hasta la mitad de la fila), $q_i$ queda aproximadamente entre el 32~\% y el 39~\%: el fondo de cada fila se estima con aproximadamente el tercio de menor intensidad de sus píxeles. El percentil disminuye en las filas con una fracción alta de CNTs (distribución bimodal), en las que un percentil mayor incluiría píxeles de la red en la estimación del fondo. La Figura~\ref{fig:met_fondo} ilustra esta etapa sobre la medición 2b-1.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{metodologia/met_fondo.pdf}
+\caption{Corrección de fondo por línea de barrido en la medición 2b-1. (a) Matriz de entrada $I_{syp}$. (b) Resultado $I_{fondo}$. (c) Mediana de cada fila antes (gris) y después (negro) de la corrección, en función de la fila $i$.}
+\label{fig:met_fondo}
+\end{figure}
+
 
 \subsection{Filtrado de Líneas Horizontales}
 \label{sec:met_lineas}
 
-Tras la corrección de fondo pueden permanecer tramos de línea de barrido cuyo nivel difiere del de las líneas vecinas, que se manifiestan como líneas impulsivas horizontales. Para eliminarlos se aplica nuevamente el filtro de la Sección~\ref{sec:met_syp} sobre $I_{fondo}$, con $X = I_{fondo}$, una ventana vertical de $5\times1$ ($a = 5$ filas por $b = 1$ columna) y umbral $\lambda=2$; la estimación $\hat\sigma_{SyP}$ de (\ref{eq:mad}) se recalcula para esta instancia. Con esta ventana, cada píxel se compara únicamente con los dos píxeles superiores y los dos inferiores de su misma columna: un tramo de línea desplazado respecto a sus vecinas produce un residuo grande y se reemplaza, mientras que una ventana horizontal no detectaría este defecto, dado que los vecinos del píxel pertenecerían a la misma línea defectuosa. El resultado se denota $I_{clean}$.
+Tras la corrección de fondo pueden permanecer tramos de línea de barrido cuyo nivel difiere del de las líneas vecinas, que se manifiestan como líneas impulsivas horizontales. Para eliminarlos se aplica nuevamente el filtro de la Sección~\ref{sec:met_syp} sobre $I_{fondo}$, con $X = I_{fondo}$, una ventana vertical de $5\times1$ ($a = 5$ filas por $b = 1$ columna) y umbral $\lambda=2$; la estimación $\hat\sigma_{SyP}$ de (\ref{eq:mad}) se recalcula para esta instancia. Con esta ventana, cada píxel se compara únicamente con los dos píxeles superiores y los dos inferiores de su misma columna: un tramo de línea desplazado respecto a sus vecinas produce un residuo grande y se reemplaza, mientras que una ventana horizontal no detectaría este defecto, dado que los vecinos del píxel pertenecerían a la misma línea defectuosa. El resultado se denota $I_{clean}$. La Figura~\ref{fig:met_lineas} ilustra esta etapa sobre la medición 2b-1.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{metodologia/met_lineas.pdf}
+\caption{Filtrado de líneas horizontales en la medición 2b-1. (a) Matriz de entrada $I_{fondo}$. (b) Resultado $I_{clean}$. (c) Píxeles reemplazados por el valor del filtro de mediana con ventana vertical de $5\times1$. Los paneles (a) y (b) comparten los límites de color.}
+\label{fig:met_lineas}
+\end{figure}
+
 
 \subsection{Normalización}
 \label{sec:met_norm}
@@ -163,7 +195,7 @@ I_{seg}(i,j) = \max\left(0,\; \min\left(1,\; \frac{I_{clean}(i,j) - P_{1}}{P_{99
 \label{eq:norm}
 \end{equation}
 
-El 1~\% de valores extremos de cada lado se satura en 0 y en 1, de modo que unos pocos píxeles no dominan la escala de los umbrales de binarización.
+El 1~\% de valores extremos de cada lado se satura en 0 y en 1, de modo que unos pocos píxeles no dominan la escala de los umbrales de binarización. La matriz resultante se muestra en la Figura~\ref{fig:met_binarizacion}(a).
 
 \subsection{Segmentación Multiescala y Binarización}
 \label{sec:met_binarizacion}
@@ -232,6 +264,16 @@ donde $\wedge$ es la conjunción lógica píxel a píxel (para dos máscaras $M_
 
 Cuando la cobertura de la máscara integrada, $c = \frac{1}{N^2}\sum_{i,j} M_e(i,j)$, es decir, la fracción de píxeles clasificados como red, cae por debajo del 15~\%, se sustituye $M_e$ por la binarización local, $M_e = A_{50}(M_L)$, con los mismos parámetros empleados en la conjunción. Este mecanismo no introduce un método alternativo con parámetros propios sino que reutiliza el componente local del pipeline. El umbral de $0.15$ se fijó a partir de la inspección de las coberturas obtenidas por la conjunción, como un límite inferior por debajo del cual la máscara deja de representar la red visible en $I_{seg}$; de este modo, el respaldo actúa únicamente en las mediciones en las que la conjunción resulta excesivamente restrictiva.
 
+La Figura~\ref{fig:met_binarizacion} ilustra las binarizaciones y su integración sobre la medición 2b-1.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{metodologia/met_binarizacion.pdf}
+\caption{Segmentación de la medición 2b-1. (a) Matriz normalizada $I_{seg}$. (b) Binarización local $M_L$. (c) Binarización regional $M_R$. (d) Binarización global $M_G$. (e) Máscara estricta $M_e$. (f) Contorno de $M_e$ (rojo) superpuesto a $I_{seg}$.}
+\label{fig:met_binarizacion}
+\end{figure}
+
+
 \subsection{Representaciones de Trabajo}
 \label{sec:met_representaciones}
 
@@ -243,6 +285,16 @@ A partir de la salida del pipeline se construyen cuatro representaciones que sir
     \item \textbf{Esqueleto:} Se obtiene mediante la función \texttt{bwskel} sobre la máscara morfológica. Esta función adelgaza cada componente conexa eliminando de forma iterativa píxeles de sus bordes, sin desconectarla ni abrir o cerrar huecos, hasta reducirla a líneas de 1 px de grosor que siguen su eje central y conservan su topología. Posteriormente se aplican cinco iteraciones de poda de píxeles mediante \texttt{bwmorph(\texttt{'spur'}, 5)}: en cada iteración se eliminan los puntos extremos del esqueleto, es decir, los píxeles con un solo vecino de valor 1 entre sus 8 vecinos. De este modo se recortan progresivamente las ramas y se eliminan las ramas espurias cortas, de hasta aproximadamente 5 px, que aparecen al esqueletizar bordes irregulares, evitando inflar artificialmente los descriptores basados en él. Las ramas largas pierden también hasta 5 px en su extremo libre. El esqueleto resultante se denota $S$.
     \item \textbf{Imagen eléctrica reconstruida $I_B$:} Canal eléctrico en su escala original, obtenido deshaciendo la normalización aplicada durante la corrección de crosstalk: se resta del canal sin normalizar el mapa $\hat I_T$ de (\ref{eq:crosstalk_ajuste}), reescalado por la MAD, $I_{corr,B} = I_{raw} - \mathrm{MAD}(I_{raw})\,\hat I_T$. Se aplica el filtro de eliminación de outliers SyP de la Sección~\ref{sec:met_syp} con $X = I_{corr,B}$, ventana $5\times5$ y $\lambda=3$, cuyo resultado se denota $I_{syp,B}$. Para corregir artefactos de fondo entre filas sin afectar gradientes reales, se construye un perfil vertical 1D con la mediana de cada fila, $p(i) = \mathrm{med}\{I_{syp,B}(i,1), \dots, I_{syp,B}(i,N)\}$, que se suaviza con la función \texttt{smoothdata} de MATLAB usando el método \texttt{rloess} con una ventana de $w = 50$ filas, lo que preserva la tendencia global de la imagen. Este método estima, para cada fila $i$, el valor suavizado $\tilde p(i)$ ajustando por mínimos cuadrados un polinomio de segundo grado a los valores de $p$ de las $w$ filas de la ventana centrada en $i$, y repite el ajuste reduciendo el peso de las filas con residuos grandes, de modo que los saltos abruptos entre filas no arrastren la tendencia $\tilde p$. La diferencia entre el perfil original y el suavizado se resta a la fila correspondiente: $I_B(i,j) = I_{syp,B}(i,j) - \left(p(i) - \tilde p(i)\right)$. A diferencia de $I_{seg}$, $I_B$ no pasa por la corrección de fondo por línea, el filtrado de líneas horizontales ni la normalización; conserva por tanto las unidades nominales del canal eléctrico, de modo que sus valores son comparables dentro de una medición, pero no necesariamente entre sesiones de medición.
 \end{itemize}
+
+La Figura~\ref{fig:met_representaciones} muestra las representaciones de trabajo de la medición 2b-1.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{metodologia/met_representaciones.pdf}
+\caption{Representaciones de trabajo de la medición 2b-1. (a) Máscara morfológica $M_{mor}$. (b) Esqueleto $S$ (rojo) superpuesto a $M_{mor}$ (gris). (c) Imagen eléctrica reconstruida $I_B$, en unidades nominales del canal eléctrico.}
+\label{fig:met_representaciones}
+\end{figure}
+
 
 \section{Extracción de Descriptores Morfológicos}
 \label{sec:met_descriptores}
