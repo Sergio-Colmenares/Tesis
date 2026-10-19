@@ -26,9 +26,9 @@ digraph proceso {
         label=<<B>2. Preprocesamiento</B>>; style="rounded,filled"; fillcolor="#E8F0FA"; color="#9DB7D8";
         norm  [label=<Normalización robusta  →  <I>Ĩ</I>, <I>T̃</I><BR/><FONT POINT-SIZE="9">(x − mediana) / MAD</FONT>>];
         cross [label=<Corrección de crosstalk topográfico  →  <B><I>I</I><SUB>corr</SUB></B> = <I>Ĩ</I> − <I>Î</I><SUB>T</SUB><BR/><FONT POINT-SIZE="9"><I>Î</I><SUB>T</SUB> = β<SUB>0</SUB> + β<SUB>1</SUB><I>T̃</I> + β<SUB>2</SUB> ∂<I>T̃</I>/∂x + β<SUB>3</SUB> ∂<I>T̃</I>/∂y   (mínimos cuadrados, un ajuste por medición)</FONT>>];
-        syp1  [label=<Filtro sal y pimienta selectivo  →  <B><I>I</I><SUB>syp</SUB></B><BR/><FONT POINT-SIZE="9">mediana 5×5,  |R| &gt; 3σ̂<SUB>R</SUB>,  σ̂<SUB>R</SUB> = med|R| / 0.6745</FONT>>];
+        syp1  [label=<Filtro sal y pimienta selectivo  →  <B><I>I</I><SUB>syp</SUB></B><BR/><FONT POINT-SIZE="9">mediana 5×5,  |R| &gt; 3σ̂<SUB>SyP</SUB>,  σ̂<SUB>SyP</SUB> = med|R| / 0.6745</FONT>>];
         fondo [label=<Corrección de fondo por línea de barrido  →  <B><I>I</I><SUB>fondo</SUB></B><BR/><FONT POINT-SIZE="9">resta a cada fila la mediana de su tercio más oscuro (p = 40 − 20ρ %)</FONT>>];
-        syp2  [label=<Filtro de líneas horizontales  →  <B><I>I</I><SUB>clean</SUB></B><BR/><FONT POINT-SIZE="9">mediana vertical 5×1,  |R| &gt; 2σ̂<SUB>R</SUB></FONT>>];
+        syp2  [label=<Filtro de líneas horizontales  →  <B><I>I</I><SUB>clean</SUB></B><BR/><FONT POINT-SIZE="9">mediana vertical 5×1,  |R| &gt; 2σ̂<SUB>SyP</SUB></FONT>>];
         iseg  [label=<Normalización P1–P99  →  <B><I>I</I><SUB>seg</SUB></B> ∈ [0, 1]>, fillcolor="#D6E4F5"];
         norm -> cross -> syp1 -> fondo -> syp2 -> iseg;
     }
