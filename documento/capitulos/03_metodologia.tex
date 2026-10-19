@@ -182,7 +182,7 @@ G_{\sigma}(\delta_u, \delta_v) = \frac{1}{Z}\exp\left(-\frac{\delta_u^2 + \delta
 \label{eq:gauss}
 \end{equation}
 
-donde $(\delta_u, \delta_v)$ es el desplazamiento, en píxeles, entre el vecino $(u,v)$ y el píxel central; $h = \lceil 2\sigma \rceil$ es la semianchura del núcleo, que se trunca a $(2h+1)\times(2h+1)$ píxeles; y $Z$ es la suma de los valores de la exponencial dentro de ese soporte, de modo que los pesos suman 1. Los vecinos ubicados fuera de la matriz adoptan el valor del píxel de borde más cercano. En la binarización local, $\sigma = \sigma_L = 21$~px ($\approx 1.2$~$\mu$m), con un núcleo de $85\times85$~px. En \texttt{adaptthresh}, el parámetro \texttt{NeighborhoodSize} con estadístico gaussiano corresponde a esta desviación estándar, no al tamaño de una ventana.
+donde $(\delta_u, \delta_v)$ es el desplazamiento, en píxeles, entre el vecino $(u,v)$ y el píxel central; $h = \lceil 2\sigma \rceil$ es la semianchura del núcleo, que se trunca a $(2h+1)\times(2h+1)$ píxeles; y $Z$ es la suma de los valores de la exponencial dentro de ese soporte, de modo que los pesos suman 1. Los vecinos ubicados fuera de la matriz adoptan el valor del píxel de borde más cercano. En la binarización local, $\sigma = \sigma_L = 21$~px ($\approx 1.2$~$\mu$m), con un núcleo de $85\times85$~px. En \texttt{adaptthresh}, esta desviación estándar corresponde al parámetro \texttt{NeighborhoodSize} con estadístico gaussiano.
 
 Un píxel se clasifica como nanotubo en la máscara binarizada $M_L$, una matriz de $N\times N$ con valor 1 en los píxeles de red y 0 en los de fondo, si su intensidad supera la estimación local de fondo escalada por un factor $\gamma$, que depende del parámetro de sensibilidad $s \in [0,1]$ de \texttt{adaptthresh}:
 
