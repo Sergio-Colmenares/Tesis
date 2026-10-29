@@ -1,0 +1,19 @@
+% Figura de la Sección 3.1 armada con paneles en resolución nativa (1024 x 1024).
+% Los paneles se generan en MATLAB (carpeta paneles/). Compilar:  pdflatex met_lineas.tex
+\documentclass[12pt,border=1pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{times}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\graphicspath{{paneles/}}
+% Panel: título vectorial sobre la matriz en resolución nativa
+\newcommand{\panel}[3][0.32\linewidth]{%
+  \begin{minipage}[t]{#1}\centering{\small #2}\\[2pt]\includegraphics[width=\linewidth]{#3}\end{minipage}}
+\begin{document}
+\begin{minipage}{16.5cm}
+\panel{(a) $E_{\mathrm{BG}}$}{fl_EBG}\hfill\panel{(b) $E_{\mathrm{FL}}$}{fl_EFL}\hfill\panel{(c) Píxeles reemplazados}{fl_reemp}
+\end{minipage}
+\end{document}
