@@ -21,3 +21,9 @@
 - **`medfilt2` con relleno de ceros:** en los bordes, la mediana se sesga hacia 0 y la última fila se reemplaza entera (visible en la figura de SyP). Alternativa: `'symmetric'`.
 - **Umbral global `th(1)`:** cae dentro del fondo y es inestable frente a cambios pequeños (ver `notas/crosstalk_resumen.md`). Se mantiene como está por decisión del autor.
 - **El primer A₅₀ sobre `M_G`** es redundante: no cambia el resultado (documentado en el texto).
+
+## Versión final: pauta de figuras (resolución nativa)
+Pauta 13: cada figura debe ser nítida y en formato vectorizado (PDF). Para la versión final, todos los mapas deben poder verse píxel a píxel al hacer zoom.
+- **Diagrama de la metodología:** ya cumple (PDF vectorial, miniaturas de 1024×1024 sin interpolar).
+- **Figuras `met_*`:** son PDF, pero rasterizadas a ~500 px por panel (`exportgraphics(..., 'ContentType', 'image')`). Las fuentes para rehacerlas ya están en `documento/figuras/metodologia/met_*.tex`; falta generar los paneles con el bloque de MATLAB (carpeta `paneles/`) y compilar.
+- **Figuras del Cap. 4 y anexos:** revisar con el mismo criterio cuando se trabajen.
