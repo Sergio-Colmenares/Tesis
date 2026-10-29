@@ -2,31 +2,39 @@
 
 Este capítulo describe los procedimientos aplicados sobre el conjunto de datos de microscopía de fuerza electrostática de segundo armónico (EFM-2$\omega$) empleado en este trabajo. La descripción se organiza en torno a los objetivos específicos del proyecto (Sección~\ref{sec:objetivos}), registrando la metodología aplicada en aquellos en que sea necesaria, con el fin de asegurar la claridad y reproducibilidad del trabajo. Estos objetivos son: el procesamiento digital de los datos de microscopía para reducir el ruido y aumentar el contraste de la red de nanotubos respecto a la matriz polimérica, la extracción de descriptores morfológicos físicamente interpretables a partir de las matrices procesadas y los procedimientos de ML enfocados en la relación SE-descriptores.
 
-La Figura~\ref{fig:met_panorama} presenta el panorama general de la metodología, organizada en seis etapas. En la figura, los rectángulos representan operaciones, los paralelogramos las matrices que entran y salen de cada operación, y el rombo una decisión. Cada operación recibe una o varias matrices y entrega una nueva, de modo que el procesamiento puede seguirse como una cadena de matrices con nombre propio:
+La Figura~\ref{fig:met_panorama} resume la metodología en seis etapas. Cada operación recibe una o varias matrices y entrega una nueva; sus nombres se indican en la figura y se definen en la Tabla~\ref{tab:nomenclatura}. El propósito de cada etapa es el siguiente:
 
 \begin{enumerate}
-    \item \textbf{Adquisición.} De cada archivo de medición se extraen dos matrices de $N\times N$ valores: el canal eléctrico $E_0$ y el canal topográfico $H_0$.
-    \item \textbf{Preprocesamiento.} Reduce el ruido del canal eléctrico y aumenta el contraste entre la red de nanotubos y la matriz polimérica. Ambos canales se normalizan ($\tilde E$, $\tilde H$); a partir de $\tilde H$ se estima la componente del canal eléctrico asociada a la topografía, $\hat E_H$, cuya resta produce el canal corregido de crosstalk, $E_{\mathrm{CT}}$. Sobre este se aplican sucesivamente un filtro de ruido impulsivo ($E_{\mathrm{SP}}$), una corrección de fondo por línea de barrido ($E_{\mathrm{BG}}$) y un filtro de líneas horizontales ($E_{\mathrm{FL}}$). Finalmente, los valores se escalan al intervalo $[0,1]$, lo que produce la matriz de entrada de la segmentación, $E_{\mathrm{seg}}$.
-    \item \textbf{Extracción de máscara.} Mediante una segmentación multiescala, clasifica cada píxel de $E_{\mathrm{seg}}$ como red o como fondo. Tres binarizaciones de distinta escala espacial producen las máscaras $M_L$, $M_R$ y $M_G$, que se combinan en la máscara $M_\wedge$. Si la fracción de píxeles clasificados como red en $M_\wedge$ es menor que el 15~\%, se emplea en su lugar una máscara de respaldo. La máscara seleccionada se denomina máscara final, $M_{\mathrm{F}}$.
-    \item \textbf{Matrices para la extracción de descriptores.} A partir de $M_{\mathrm{F}}$ se construyen la máscara morfológica $M_{\mathrm{C}}$, mediante un cierre morfológico, y el esqueleto $S$ de la red. Las tres matrices, $M_{\mathrm{F}}$, $M_{\mathrm{C}}$ y $S$, son la entrada de la extracción de descriptores.
-    \item \textbf{Extracción de descriptores.} Sobre estas matrices se calculan 13 descriptores morfológicos, agrupados en distribución espacial, forma, orientación y conectividad. Los descriptores de las 81 mediciones forman la matriz de descriptores $X$, de $81\times13$, en la que cada fila corresponde a una medición y cada columna a un descriptor.
-    \item \textbf{Análisis de resultados.} La matriz $X$ se analiza de forma exploratoria y se relaciona con la eficacia de apantallamiento (SE) mediante modelos interpretables, cuyo análisis de importancia de descriptores sustenta la interpretación física.
+    \item \textbf{Adquisición.} De cada medición se extraen el canal eléctrico $E_0$ y el canal topográfico $H_0$.
+    \item \textbf{Preprocesamiento.} Corrige, uno a uno, los defectos del canal eléctrico que impedirían separar la red del fondo:
+    \begin{itemize}
+        \item la \emph{normalización robusta} lleva ambos canales a una escala común, que no se ve afectada por los valores extremos del ruido, para poder compararlos ($\tilde E$, $\tilde H$);
+        \item la \emph{corrección de crosstalk} retira del canal eléctrico las huellas de la topografía, como bordes de rayones y partículas, que de otro modo se confundirían con la red ($E_{\mathrm{CT}}$);
+        \item el \emph{filtro de sal y pimienta} reemplaza los píxeles aislados con valores extremos, que producirían detecciones puntuales falsas ($E_{\mathrm{SP}}$);
+        \item la \emph{corrección de fondo por línea} iguala el nivel de fondo de las líneas de barrido, que difiere entre líneas y genera bandas horizontales ($E_{\mathrm{BG}}$);
+        \item el \emph{filtro de líneas horizontales} elimina los tramos de línea que, tras la corrección anterior, quedan desplazados respecto de sus vecinos ($E_{\mathrm{FL}}$);
+        \item la \emph{normalización $P_1$--$P_{99}$} lleva cada medición al intervalo $[0,1]$, de modo que los umbrales de la segmentación tengan el mismo significado en todas las mediciones ($E_{\mathrm{seg}}$).
+    \end{itemize}
+    \item \textbf{Extracción de máscara.} Clasifica cada píxel como red o como fondo. Como los CNTs se encuentran a distintas profundidades, la intensidad de su señal varía; por ello se combinan tres binarizaciones de distinta escala espacial que se compensan entre sí: la local capta el detalle de la red, y la regional y la global descartan el fondo que la local confunde con red. Si la combinación resulta demasiado restrictiva, se emplea la binarización local como respaldo. El resultado es la máscara final $M_{\mathrm{F}}$.
+    \item \textbf{Matrices para la extracción de descriptores.} El cierre morfológico repara las discontinuidades que la segmentación introduce en la red ($M_{\mathrm{C}}$), y la esqueletización la reduce a su eje central, sobre el que se miden longitudes y trayectorias ($S$).
+    \item \textbf{Extracción de descriptores.} Sobre $M_{\mathrm{F}}$, $M_{\mathrm{C}}$ y $S$ se calculan 13 descriptores por medición, que forman la matriz de descriptores $X$, de $81\times13$.
+    \item \textbf{Análisis de resultados.} La matriz $X$ se relaciona con la eficacia de apantallamiento (SE) mediante un análisis exploratorio y modelos interpretables.
 \end{enumerate}
 
 Las etapas 1 a 4 se describen en la Sección~\ref{sec:met_procesamiento}, la etapa 5 en la Sección~\ref{sec:met_descriptores} y la etapa 6 en la Sección~\ref{sec:met_analisis}.
 
 \afterpage{%
-\begin{landscape}
+\begin{landscape}\numeroapaisado
 \begin{figure}[p]
 \centering
 \includegraphics[width=\linewidth]{diagrama_metodologia.pdf}
-\caption{Panorama general de la metodología. Los rectángulos representan operaciones, los paralelogramos las matrices que entran y salen de cada operación, y el rombo la decisión de respaldo de la extracción de máscara. Las flechas gruesas indican el paso de una etapa a la siguiente. Las miniaturas corresponden a la medición 2a-6, con la escala de color de cada matriz fijada en sus percentiles 1 y 99; cada miniatura cubre el área de barrido completa, de $60\times60~\mu$m.}
+\caption{Panorama general de la metodología. Las miniaturas corresponden a la medición 2a-6; la escala de color de cada matriz se fija en sus percentiles 1 y 99, y cada miniatura cubre el área de barrido completa, de $60\times60~\mu$m.}
 \label{fig:met_panorama}
 \end{figure}
 \end{landscape}
 }
 
-Los nombres de las matrices siguen una convención única, resumida en la Tabla~\ref{tab:nomenclatura}. La letra $E$ designa el canal eléctrico; $H$, la altura topográfica; $M$, una máscara binaria; $S$, el esqueleto; y $X$, la matriz de descriptores. El subíndice 0 identifica los datos originales; la tilde, la normalización robusta; el acento circunflejo, un valor estimado mediante un ajuste; y los subíndices en letra recta, la operación que produce cada matriz, según su abreviatura: CT, corrección de crosstalk; SP, filtro de sal y pimienta; BG, corrección de fondo (del inglés \emph{background}); FL, filtrado de líneas; seg, entrada de la segmentación; F, máscara final; y C, cierre morfológico.
+Los nombres de las matrices siguen una convención: $E$ designa el canal eléctrico; $H$, la altura topográfica; $M$, una máscara binaria; $S$, el esqueleto; y $X$, la matriz de descriptores. El subíndice 0 indica los datos originales; la tilde, la normalización robusta; el acento circunflejo, un valor estimado mediante un ajuste; y los subíndices en letra recta, la operación que produce la matriz (por ejemplo, CT: corrección de crosstalk; BG: corrección de fondo, del inglés \emph{background}).
 
 \begin{table}[H]
 \centering

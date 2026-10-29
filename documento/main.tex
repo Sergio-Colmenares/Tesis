@@ -15,6 +15,12 @@
 \usepackage{float}      % para [H] en figuras y tablas
 \usepackage{pdflscape}  % páginas apaisadas (diagrama de la metodología)
 \usepackage{afterpage}  % coloca la página apaisada sin dejar la anterior a medias
+\usepackage{eso-pic}    % número de página de la hoja apaisada
+% Página apaisada: el número se coloca abajo al centro de la vista apaisada (borde
+% derecho de la hoja), girado como el contenido, en lugar del pie normal.
+\newcommand{\numeroapaisado}{\thispagestyle{empty}%
+  \AddToShipoutPictureFG*{\AtPageLowerLeft{\put(\LenToUnit{\paperwidth-1.45cm},\LenToUnit{0.5\paperheight}){%
+    \makebox(0,0){\rotatebox{90}{\thepage}}}}}}
 \usepackage{booktabs}   % para tablas de mejor calidad (\toprule, \midrule, \bottomrule)
 \usepackage{caption}    % para control de leyendas
 \captionsetup{justification=justified, singlelinecheck=false} % leyendas justificadas a la izquierda
