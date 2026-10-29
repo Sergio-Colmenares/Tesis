@@ -26,6 +26,10 @@
 \captionsetup{justification=justified, singlelinecheck=false} % leyendas justificadas a la izquierda
 \usepackage{subcaption} % para subfiguras si se necesitan
 \usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage[spanish]{todonotes}  % comentarios de revisión (retirar en la versión final)
+% Comentario de revisión en el cuerpo del texto
+\newcommand{\comentario}[1]{\todo[inline, color=red!8, bordercolor=red, linecolor=red]{\small #1}}
 % Configuración de interlineado
 \onehalfspacing
 % Source - https://tex.stackexchange.com/a/73865
