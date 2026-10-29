@@ -28,19 +28,20 @@
 \definecolor{v4}{HTML}{5EC962}\definecolor{v5}{HTML}{FDE725}
 
 % Miniatura: \mini[ancho]{archivo}{escala de color: v (viridis), g (grises) o n (ninguna)}
-% Incluye una barra de 10 um (1/6 del lado de 60 um) y, si corresponde, la escala de color.
+% Sin elementos superpuestos a la imagen; si corresponde, la escala de color va al lado.
 \newcommand{\mini}[3][1.3cm]{%
-\begin{tikzpicture}[baseline=(i.center), every node/.style={}]
+\begin{tikzpicture}[baseline=(i.center), every node/.style={}, sharp corners]
   \node[inner sep=0, anchor=south west] (i) at (0,0) {\includegraphics[width=#1]{#2}};
-  \draw[white, line width=1.1pt] ($(i.south east)+(-0.07,0.08)$) -- ++(-#1/6,0)
-        node[midway, above=-1.5pt, font=\fontsize{4}{4}\selectfont, text=white] {10~$\mu$m};
   \ifx v#3
-    \foreach \a/\b [count=\k from 0] in {v1/v2, v2/v3, v3/v4, v4/v5}
-      \shade[bottom color=\a, top color=\b] ($(i.south east)+(0.07,\k*#1/4)$) rectangle ++(0.12,#1/4);
+    \foreach \k in {0,...,63}{%
+      \pgfmathtruncatemacro{\tramo}{\k/16}\pgfmathsetmacro{\frac}{100*(\k-16*\tramo)/16}%
+      \ifcase\tramo \colorlet{cb}{v2!\frac!v1}\or \colorlet{cb}{v3!\frac!v2}\or \colorlet{cb}{v4!\frac!v3}\else \colorlet{cb}{v5!\frac!v4}\fi
+      \fill[cb, draw=none] ($(i.south east)+(0.07,\k*#1/64)$) rectangle ++(0.12,#1/64+0.01pt);}
     \draw[line width=0.2pt] ($(i.south east)+(0.07,0)$) rectangle ++(0.12,#1);
   \fi
   \ifx g#3
-    \shade[bottom color=black, top color=white] ($(i.south east)+(0.07,0)$) rectangle ++(0.12,#1);
+    \foreach \k in {0,...,63}{\pgfmathsetmacro{\frac}{100*\k/63}\colorlet{cb}{white!\frac!black}%
+      \fill[cb, draw=none] ($(i.south east)+(0.07,\k*#1/64)$) rectangle ++(0.12,#1/64+0.01pt);}
     \draw[line width=0.2pt] ($(i.south east)+(0.07,0)$) rectangle ++(0.12,#1);
   \fi
 \end{tikzpicture}}
