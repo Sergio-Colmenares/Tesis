@@ -81,7 +81,7 @@ Las secciones siguientes describen las operaciones de la Figura~\ref{fig:met_pan
 \subsection{Corrección de Crosstalk Topográfico}
 \label{sec:met_crosstalk}
 
-Como primera etapa se elimina el crosstalk topográfico [8], es decir, la aparición en el canal eléctrico de rasgos de la topografía de la superficie, como bordes de rayones y partículas. El propósito de la corrección es reconocer la contribución de la matriz topográfica dentro de la matriz eléctrica y retirarla.
+Como primera etapa se elimina el crosstalk topográfico [8], es decir, la aparición en el canal eléctrico de rasgos de la topografía de la superficie, como bordes de rayones y partículas. La corrección busca identificar la parte del canal eléctrico que reproduce la topografía y retirarla.
 
 Ambos canales se normalizan primero de forma robusta, restando su mediana y dividiendo por su desviación absoluta mediana (MAD):
 
@@ -96,14 +96,14 @@ Ambos canales se normalizan primero de forma robusta, restando su mediana y divi
 
 donde $\tilde E$ y $\tilde H$ son los canales eléctrico y topográfico normalizados (la tilde indica normalización), adimensionales y comparables entre sí, y la mediana y la MAD de cada canal se calculan sobre todos los píxeles de la matriz. Se emplean la mediana y la MAD en lugar de la media y la desviación estándar porque no se ven afectadas por valores extremos derivados del ruido.
 
-A partir de los canales eléctrico y topográfico normalizados, se construye un modelo de regresión lineal múltiple para estimar la contribución de la topografía sobre la señal eléctrica. Se considera que dicha contribución puede describirse mediante una combinación lineal de tres variables: la altura topográfica local y sus variaciones espaciales en las direcciones horizontal y vertical. El modelo se expresa como:
+Con los canales normalizados se ajusta un modelo de regresión lineal múltiple que estima la contribución de la topografía a la señal eléctrica. El modelo supone que esta contribución es una combinación lineal de la altura local y de sus variaciones en las direcciones horizontal y vertical:
 
 \begin{equation}
 \tilde E(i,j) = \beta_0 + \beta_1 \tilde H(i,j) + \beta_2 \frac{\partial \tilde H}{\partial x}(i,j) + \beta_3 \frac{\partial \tilde H}{\partial y}(i,j) + \varepsilon(i,j)
 \label{eq:crosstalk}
 \end{equation}
 
-donde $\tilde E(i,j)$ y $\tilde H(i,j)$ representan los valores normalizados de los canales eléctrico y topográfico en el píxel $(i,j)$, respectivamente. Los parámetros $\beta_0, \dots, \beta_3$ son los coeficientes desconocidos del modelo, mientras que $\varepsilon(i,j)$ corresponde al residuo, es decir, a la parte de la señal eléctrica que no es explicada por las variables topográficas consideradas. Las variaciones espaciales de la topografía se calculan mediante diferencias finitas centrales, utilizando la función \texttt{gradient} de MATLAB:
+donde $\beta_0, \dots, \beta_3$ son los coeficientes del modelo; $\varepsilon(i,j)$ es el residuo, es decir, la parte de $\tilde E(i,j)$ que las variables topográficas no explican; y $\partial \tilde H/\partial x$ y $\partial \tilde H/\partial y$ son las variaciones direccionales de la topografía, calculadas por diferencias centrales (función \texttt{gradient} de MATLAB):
 
 \begin{equation}
 \frac{\partial \tilde H}{\partial x}(i,j) = \frac{\tilde H(i,j+1) - \tilde H(i,j-1)}{2}, \qquad
@@ -111,30 +111,30 @@ donde $\tilde E(i,j)$ y $\tilde H(i,j)$ representan los valores normalizados de 
 \label{eq:diferencias}
 \end{equation}
 
-Estas derivadas se expresan por píxel. En los bordes de la matriz se utilizan diferencias de un solo lado, por ejemplo $\tilde H(i,2) - \tilde H(i,1)$ en la primera columna.
+expresadas por píxel; en la primera y la última columna (o fila) se usa la diferencia de un solo lado, por ejemplo $\tilde H(i,2) - \tilde H(i,1)$.
 
-Para estimar los coeficientes del modelo, se consideran simultáneamente todos los píxeles de cada medición. Dado que las matrices tienen dimensiones de $N\times N$, cada píxel proporciona una observación que relaciona el valor eléctrico con la topografía y sus dos gradientes espaciales. De esta manera, se dispone de $N^2 = 1\,048\,576$ observaciones para estimar cuatro coeficientes, cuyos valores son comunes a toda la medición. Los coeficientes se determinan mediante el método de mínimos cuadrados, que busca los valores de $\beta_0, \dots, \beta_3$ que minimizan la suma de los residuos al cuadrado:
+El modelo se ajusta una sola vez por medición, sobre la matriz completa: cada uno de los $N^2 = 1\,048\,576$ píxeles aporta una ecuación de la forma (\ref{eq:crosstalk}), de modo que se dispone de $N^2$ observaciones para estimar cuatro coeficientes, comunes a toda la medición. Los coeficientes se estiman por mínimos cuadrados, es decir, como los valores $\hat\beta_0, \dots, \hat\beta_3$ que minimizan la suma de los residuos al cuadrado sobre todos los píxeles:
 
 \begin{equation}
 (\hat\beta_0, \dots, \hat\beta_3) = \arg\min_{\beta_0, \dots, \beta_3} \sum_{i=1}^{N} \sum_{j=1}^{N} \varepsilon(i,j)^2
 \label{eq:minimos_cuadrados}
 \end{equation}
 
-El acento circunflejo indica que se trata de un coeficiente estimado a partir de los datos experimentales. Este problema se resuelve mediante el operador \texttt{\textbackslash} de MATLAB, que plantea los mínimos cuadrados en forma matricial y los resuelve por factorización QR. Como resultado, se obtiene un único conjunto de cuatro coeficientes estimados para cada medición. Una vez determinados estos coeficientes, se sustituyen en el modelo para calcular, en cada píxel, la componente de la señal eléctrica explicada por las variables topográficas:
+donde el acento circunflejo indica un valor estimado a partir de los datos. Este problema se resuelve con el operador \texttt{\textbackslash} de MATLAB, mediante factorización QR. Con los coeficientes estimados se construye la componente del canal eléctrico explicada por la topografía:
 
 \begin{equation}
 \hat E_H(i,j) = \hat\beta_0 + \hat\beta_1 \tilde H(i,j) + \hat\beta_2 \frac{\partial \tilde H}{\partial x}(i,j) + \hat\beta_3 \frac{\partial \tilde H}{\partial y}(i,j)
 \label{eq:crosstalk_ajuste}
 \end{equation}
 
-Aunque los coeficientes estimados son constantes para toda la medición, los valores de la topografía y sus gradientes cambian entre píxeles. Por tanto, la evaluación de esta expresión produce una matriz $\hat E_H$ de las mismas dimensiones que los canales originales, que representa la componente de la señal eléctrica asociada estadísticamente con la topografía; el subíndice $H$ identifica la variable explicativa. Finalmente, esta componente se resta píxel a píxel del canal eléctrico normalizado:
+Aunque los coeficientes son los mismos en toda la medición, la topografía y sus derivadas cambian de un píxel a otro, por lo que $\hat E_H$ es una matriz de $N\times N$ con un valor distinto en cada píxel; el subíndice $H$ indica que corresponde a la parte atribuida a la topografía. Esta matriz se resta píxel a píxel del canal eléctrico normalizado:
 
 \begin{equation}
 E_{\mathrm{CT}}(i,j) = \tilde E(i,j) - \hat E_H(i,j)
 \label{eq:crosstalk_resta}
 \end{equation}
 
-La matriz resultante $E_{\mathrm{CT}}$ contiene los residuos del modelo de regresión y constituye la entrada para las siguientes operaciones de procesamiento. Esta corrección permite reducir las contribuciones eléctricas asociadas linealmente con la topografía y sus gradientes, aunque no garantiza distinguir completamente entre artefactos instrumentales y variaciones eléctricas físicamente correlacionadas con la morfología superficial.
+La matriz $E_{\mathrm{CT}}$ contiene los residuos del ajuste y es la entrada de las etapas siguientes. La corrección elimina la parte del canal eléctrico asociada linealmente con la topografía y sus derivadas; sin embargo, no distingue entre los artefactos instrumentales y las variaciones eléctricas que se correlacionan físicamente con la morfología de la superficie.
 
 Por construcción de los mínimos cuadrados, $E_{\mathrm{CT}}$ tiene media nula y correlación nula con $\tilde H$ y con sus derivadas, por lo que la correlación posterior a la corrección no mide su efectividad. Por esta razón, el efecto de la corrección se examina visualmente, comparando para una misma medición el canal topográfico, el canal eléctrico normalizado $\tilde E$ y el canal corregido $E_{\mathrm{CT}}$, con atención a las huellas topográficas, como bordes de rayones y partículas superficiales. La Figura~\ref{fig:met_crosstalk} muestra esta comparación para la medición 0a-5.
 
