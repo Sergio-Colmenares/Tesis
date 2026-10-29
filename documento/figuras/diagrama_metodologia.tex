@@ -1,132 +1,193 @@
-% Diagrama general de la metodología (Figura de la introducción del Capítulo 3).
+% Panorama general de la metodología (Figura de la introducción del Capítulo 3).
+% Estructura según la maqueta "Panorama general de la metodología": seis etapas en columnas,
+% nota inicial y cuadro de convenciones. Se inserta en una página apaisada.
 % Compilar:  pdflatex diagrama_metodologia.tex   ->  diagrama_metodologia.pdf
 \documentclass[border=3pt]{standalone}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{times}
-\usepackage{amsmath}
+\usepackage{amsmath, amssymb}
 \usepackage{tikz}
 \usetikzlibrary{positioning, shapes.geometric, arrows.meta, fit, backgrounds, calc}
 
+% Colores de las etapas (como en la maqueta)
+\colorlet{c1}{black!60}
+\colorlet{c2}{blue!70!black}
+\colorlet{c3}{green!45!black}
+\colorlet{c4}{violet!75!black}
+\colorlet{c5}{teal!80!black}
+\colorlet{c6}{red!70!black}
+
 \begin{document}
 \begin{tikzpicture}[
-    node distance = 0.22cm and 0.2cm,
+    node distance = 0.17cm and 0.2cm,
+    every node/.style = {font=\scriptsize},
     op/.style    = {draw, rectangle, rounded corners=1pt, fill=white, align=center,
-                    font=\scriptsize, text width=#1, inner sep=2.2pt,
+                    text width=#1, inner sep=2pt,
                     execute at begin node={\hyphenpenalty=10000\exhyphenpenalty=10000}},
-    op/.default  = 4.3cm,
+    op/.default  = 2.9cm,
     var/.style   = {draw, trapezium, trapezium left angle=72, trapezium right angle=108,
-                    trapezium stretches body, fill=blue!7, font=\scriptsize, align=center,
-                    inner xsep=3pt, inner ysep=1.5pt},
-    dec/.style   = {draw, diamond, aspect=2.4, fill=white, font=\scriptsize, inner sep=0.3pt, align=center},
-    flow/.style  = {-{Stealth[length=1.5mm]}, semithick},
-    big/.style   = {-{Stealth[length=2.4mm]}, very thick},
-    title/.style = {font=\small\bfseries, align=center},
-    stage/.style = {draw=#1!65!black, fill=#1!7, rounded corners=3pt, inner sep=5pt, line width=0.7pt}
+                    trapezium stretches body, fill=blue!8, align=center,
+                    inner xsep=3pt, inner ysep=1.2pt},
+    dec/.style   = {draw, diamond, aspect=2.2, fill=white, inner sep=0.5pt, align=center},
+    flow/.style  = {-{Stealth[length=1.4mm]}, semithick},
+    link/.style  = {-{Stealth[length=1.8mm]}, thick, #1},
+    head/.style  = {draw=#1, fill=#1, text=white, font=\small\bfseries, align=center,
+                    rounded corners=2pt, inner sep=3pt},
+    stage/.style = {draw=#1, fill=#1!6, rounded corners=3pt, line width=0.8pt, inner sep=3pt},
 ]
 
-% =====================================================================
-% Fila superior: 1. Adquisición -> 2. Preprocesamiento -> 3. Segmentación
-% =====================================================================
+% Anchos y posiciones (centros) de las columnas
+% (entre recuadros queda un espacio de 0.6 cm para las flechas)
+\def\colwa{2.5cm}  \def\colwb{3.1cm}  \def\colwc{4.4cm}  \def\colwd{2.6cm}  \def\colwe{3.8cm}  \def\colwf{2.9cm}
+\def\colxa{1.5}  \def\colxb{5.4}  \def\colxc{10.2}  \def\colxd{14.95}  \def\colxe{19.05}  \def\colxf{23.3}
 
-% ---- 1. Adquisición --------------------------------------------------
-\node[title] (t1) at (0,0) {1. Adquisición};
-\node[op] (a1) [below=0.25cm of t1] {Archivos .ibw (MFP-3D)\\81 mediciones EFM-2$\omega$\\$N\times N$, $N=1024$; $60\times60~\mu$m\\$\Delta \approx 58.6$~nm por píxel};
-\node[op] (a2) [below=of a1] {Extracción de canales\\(\texttt{IBWread}, \texttt{rot90})};
-\node[var] (a3) at ($(a2.south)+(-1.15,-0.65)$) {$E_0$\\canal eléctrico};
-\node[var] (a4) at ($(a2.south)+(1.15,-0.65)$) {$H_0$\\canal topográfico};
-\draw[flow] (a1) -- (a2);
-\draw[flow] (a2.south -| a3) -- (a3);
-\draw[flow] (a2.south -| a4) -- (a4);
+% =====================================================================
+% Nota
+% =====================================================================
+\node[draw=blue!60!black, fill=blue!5, rounded corners=2pt, text width=24cm, align=center, inner sep=4pt, font=\footnotesize]
+    (nota) at (12.4, 1.0)
+    {\textbf{Nota:} $E_0$ y $H_0$ son matrices nativas del microscopio. La visualización con \texttt{imagesc}
+     es solo para inspección y elaboración de figuras; no hace parte del procesamiento.};
 
-% ---- 2. Preprocesamiento --------------------------------------------
-\node[title] (t2) at (5.6,0) {2. Preprocesamiento};
-\node[op] (b0) [below=0.25cm of t2] {Normalización robusta (mediana y MAD)};
+% =====================================================================
+% 1. Adquisición de datos
+% =====================================================================
+\node[head=c1, text width=\colwa] (h1) at (\colxa,0) {1. Adquisición\\de datos};
+\node[op=\colwa] (a1) [below=0.3cm of h1] {Archivos .ibw\\MFP-3D (EFM-2$\omega$)\\81 mediciones};
+\node[op=\colwa] (a2) [below=of a1] {Extracción de canales\\(\texttt{IBWread}, rotación $90^\circ$)};
+\node[var] (a3) [below=0.3cm of a2] {$E_0$: canal eléctrico\\(unidades nominales)};
+\node[var] (a4) [below=of a3] {$H_0$: canal topográfico\\(nivelado por el equipo)};
+\node[op=\colwa, fill=c1!8] (a5) [below=0.3cm of a4] {Matrices de $N\times N$\\$N = 1024$, $60\times60~\mu$m\\$\Delta \approx 58.6$~nm/px};
+\draw[flow] (a1) -- (a2);  \draw[flow] (a2) -- (a3);
+
+% =====================================================================
+% 2. Preprocesamiento
+% =====================================================================
+\node[head=c2, text width=\colwb] (h2) at (\colxb,0) {2. Preprocesamiento\\[-1pt]{\scriptsize\itshape\mdseries(canal eléctrico)}};
+\node[op=\colwb] (b0) [below=0.3cm of h2] {Normalización robusta\\(mediana y MAD)};
 \node[var] (v0) [below=of b0] {$\tilde E$, $\tilde H$};
-\node[op] (b1) [below=of v0] {Corrección de crosstalk topográfico\\(regresión lineal, componente $\hat E_H$)};
+\node[op=\colwb] (b1) [below=of v0] {Corrección de crosstalk topográfico\\$E_{\mathrm{CT}} = \tilde E - \hat E_H$};
 \node[var] (v1) [below=of b1] {$E_{\mathrm{CT}}$};
-\node[op] (b2) [below=of v1] {Filtro sal y pimienta $5\times5$, $\lambda=3$};
+\node[op=\colwb] (b2) [below=of v1] {Filtro de ruido impulsivo\\(sal y pimienta) $5\times5$, $\lambda=3$};
 \node[var] (v2) [below=of b2] {$E_{\mathrm{SP}}$};
-\node[op] (b3) [below=of v2] {Corrección de fondo por línea de barrido};
+\node[op=\colwb] (b3) [below=of v2] {Corrección de fondo\\por línea de barrido};
 \node[var] (v3) [below=of b3] {$E_{\mathrm{BG}}$};
-\node[op] (b4) [below=of v3] {Filtro de líneas horizontales $5\times1$, $\lambda=2$};
+\node[op=\colwb] (b4) [below=of v3] {Filtrado de líneas horizontales\\$5\times1$, $\lambda=2$};
 \node[var] (v4) [below=of b4] {$E_{\mathrm{FL}}$};
-\node[op] (b5) [below=of v4] {Normalización $P_1$--$P_{99}$};
+\node[op=\colwb] (b5) [below=of v4] {Normalización $P_1$--$P_{99}$\\(para la segmentación)};
 \node[var] (v5) [below=of b5] {$E_{\mathrm{seg}}$};
 \foreach \x/\y in {b0/v0, v0/b1, b1/v1, v1/b2, b2/v2, v2/b3, b3/v3, v3/b4, b4/v4, v4/b5, b5/v5}
     \draw[flow] (\x) -- (\y);
 
-% ---- 3. Segmentación -------------------------------------------------
-\node[title] (t3) at (11.2,0) {3. Segmentación};
-\node[op=1.35cm] (c2) [below=0.25cm of t3] {Regional\\$\sigma_R=51$ px};
-\node[op=1.35cm] (c1) [left=0.15cm of c2] {Local\\$\sigma_L=21$ px};
-\node[op=1.35cm] (c3) [right=0.15cm of c2] {Global\\Otsu, $K=6$};
+% =====================================================================
+% 3. Extracción de máscara
+% =====================================================================
+\node[head=c3, text width=\colwc] (h3) at (\colxc,0) {3. Extracción de máscara\\[-1pt]{\scriptsize\itshape\mdseries(segmentación multiescala)}};
+\node[var] (m0) [below=0.3cm of h3] {$E_{\mathrm{seg}}$};
+\node[op=1.3cm] (c2) [below=0.35cm of m0] {Regional\\$\sigma_R = 51$ px};
+\node[op=1.3cm] (c1) [left=0.15cm of c2] {Local\\$\sigma_L = 21$ px};
+\node[op=1.3cm] (c3) [right=0.15cm of c2] {Global\\Otsu, $K = 6$};
+\draw[flow] (m0) -- (c2);
+\draw[flow] (m0.south) ++(0,-0.12) -| (c1);
+\draw[flow] (m0.south) ++(0,-0.12) -| (c3);
 \node[var] (m1) [below=of c1] {$M_L$};
 \node[var] (m2) [below=of c2] {$M_R$};
 \node[var] (m3) [below=of c3] {$M_G$};
-\node[op] (c4) [below=0.35cm of m2] {Conjunción $M_L\wedge M_R\wedge M_G$\\y área mínima $A_{50}$};
+\node[op=4.2cm] (c4) [below=0.3cm of m2] {Conjunción lógica y área mínima\\$A_{50}(M_L \wedge M_R \wedge M_G)$};
 \node[var] (m4) [below=of c4] {$M_\wedge$};
-\node[dec] (d1) [below=0.3cm of m4] {$c(M_\wedge)\ge 15\,\%$};
-\node[op=1.7cm] (c5) at ($(d1.south)+(-1.45,-0.75)$) {Respaldo\\$A_{50}(M_L)$};
-\node[var] (m5) at ($(d1.south)+(1.1,-1.75)$) {$M_{\mathrm{F}}$\\máscara final};
+\node[dec] (d1) [below=0.25cm of m4] {¿$c(M_\wedge) \ge 15\,\%$?};
+\node[op=1.8cm] (c5) at ($(d1.south)+(-1.25,-0.85)$) {Respaldo local\\$A_{50}(M_L)$};
+\node[var] (m5) at ($(d1.south)+(1.25,-0.85)$) {$M_{\mathrm{F}}$\\máscara final};
 \foreach \x/\y in {c1/m1, c2/m2, c3/m3, c4/m4, m4/d1}
     \draw[flow] (\x) -- (\y);
 \foreach \m in {m1, m2, m3}
     \draw[flow] (\m) -- (\m |- c4.north);
-\draw[flow] (d1.west) -| node[pos=0.3, above, font=\scriptsize] {no} (c5.north);
-\draw[flow] (d1.east) -| node[pos=0.3, above, font=\scriptsize] {sí} (m5.north);
-\draw[flow] (c5.south) |- (m5.west);
-
-% ---- Recuadros de la fila superior ----------------------------------
-\begin{scope}[on background layer]
-\node[stage=red,    fit=(t1)(a1)(a2)(a3)(a4)] (s1) {};
-\node[stage=orange, fit=(t2)(b0)(v5)] (s2) {};
-\node[stage=blue,   fit=(t3)(c1)(c3)(c5)(m5)(d1)] (s3) {};
-\end{scope}
+\draw[flow] (d1.west) -| node[pos=0.25, above] {No} (c5.north);
+\draw[flow] (d1.east) -| node[pos=0.25, above] {Sí} (m5.north);
+\draw[flow] (c5.east) -- (c5.east -| m5.west);
 
 % =====================================================================
-% Fila inferior (de derecha a izquierda): 4 -> 5 -> 6
+% 4. Matrices para la extracción de descriptores
 % =====================================================================
-\coordinate (r2) at ($(s2.south)+(0,-0.7)$);
+\node[head=c4, text width=\colwd] (h4) at (\colxd,0) {4. Matrices para\\la extracción\\de descriptores};
+\node[var] (w0) [below=0.3cm of h4] {$M_{\mathrm{F}}$\\máscara final};
+\node[op=\colwd] (e1) [below=of w0] {Cierre morfológico\\disco de radio $r = 3$ px};
+\node[var] (w1) [below=of e1] {$M_{\mathrm{C}}$\\máscara morfológica};
+\node[op=\colwd] (e2) [below=of w1] {Esqueletización y poda\\(\texttt{bwskel} + \texttt{spur}, 5)};
+\node[var] (w2) [below=of e2] {$S$\\esqueleto};
+\draw[flow] (w0) -- (e1);  \draw[flow] (e1) -- (w1);  \draw[flow] (w1) -- (e2);  \draw[flow] (e2) -- (w2);
 
-% ---- 4. Representaciones de trabajo ---------------------------------
-\node[title] (t4) at (t3 |- r2) {4. Representaciones de trabajo};
-\node[op] (e1) [below=0.25cm of t4] {Cierre morfológico\\disco de radio $r=3$ px};
-\node[var] (w1) [below=of e1] {$M_{\mathrm{C}}$};
-\node[op] (e2) [below=of w1] {Esqueletización y poda (5 iteraciones)};
-\node[var] (w2) [below=of e2] {$S$};
-\draw[flow] (e1) -- (w1);  \draw[flow] (w1) -- (e2);  \draw[flow] (e2) -- (w2);
-
-% ---- 5. Extracción de descriptores ----------------------------------
-\node[title] (t5) at (t2 |- r2) {5. Extracción de descriptores};
-\node[op] (f1) [below=0.25cm of t5] {Distribución espacial: CNTD, CNTA, CNTS\\(sobre $M_{\mathrm{C}}$)};
-\node[op] (f2) [below=of f1] {Forma: área media y desviación,\\elongación, tortuosidad (sobre $M_{\mathrm{C}}$ y $S$)};
-\node[op] (f3) [below=of f2] {Orientación: ángulo dominante,\\coherencia (sobre $M_{\mathrm{C}}$)};
-\node[op] (f4) [below=of f3] {Conectividad: cobertura ($M_{\mathrm{F}}$), percolación,\\fragmentos ($M_{\mathrm{C}}$), longitud de red ($S$)};
-\node[var] (w3) [below=of f4] {$X$: 81 mediciones $\times$ 13 descriptores};
+% =====================================================================
+% 5. Extracción de descriptores
+% =====================================================================
+\node[head=c5, text width=\colwe] (h5) at (\colxe,0) {5. Extracción de descriptores\\[-1pt]{\scriptsize\itshape\mdseries(13 descriptores por medición)}};
+\node[op=\colwe] (f1) [below=0.3cm of h5] {\textbf{Distribución espacial} (3)\\CNTD, CNTA, CNTS\\Entrada: $M_{\mathrm{C}}$};
+\node[op=\colwe] (f2) [below=of f1] {\textbf{Forma} (4)\\área media, desviación del área,\\elongación, tortuosidad\\Entrada: $M_{\mathrm{C}}$ y $S$};
+\node[op=\colwe] (f3) [below=of f2] {\textbf{Orientación} (2)\\ángulo dominante, coherencia\\Entrada: $M_{\mathrm{C}}$};
+\node[op=\colwe] (f4) [below=of f3] {\textbf{Conectividad} (4)\\cobertura, percolación,\\longitud de red, fragmentos\\Entrada: $M_{\mathrm{F}}$, $M_{\mathrm{C}}$ y $S$};
+\node[var] (w3) [below=0.3cm of f4] {Matriz de descriptores\\$X \in \mathbb{R}^{81\times13}$};
 \draw[flow] (f4) -- (w3);
 
-% ---- 6. Análisis -----------------------------------------------------
-\node[title] (t6) at (t1 |- r2) {6. Análisis};
-\node[op] (g1) [below=0.25cm of t6] {Análisis exploratorio\\(correlación, agrupamiento, PCA)};
-\node[op] (g2) [below=of g1] {Modelos interpretables\\descriptores $\rightarrow$ SE};
-\node[op] (g3) [below=of g2] {Importancia de descriptores};
-\node[op] (g4) [below=of g3] {Interpretación física};
+% =====================================================================
+% 6. Análisis de resultados
+% =====================================================================
+\node[head=c6, text width=\colwf] (h6) at (\colxf,0) {6. Análisis\\de resultados};
+\node[op=2.5cm] (g0) [below=0.3cm of h6] {Eficacia de apantallamiento\\medida: SE$_T$, SE$_A$, SE$_R$};
+\node[op=2.5cm] (g1) [below=0.45cm of g0] {Análisis exploratorio\\(correlación, agrupamiento, PCA)};
+\node[op=2.5cm] (g2) [below=of g1] {Relación descriptores--SE\\(modelos interpretables)};
+\node[op=2.5cm] (g3) [below=of g2] {Importancia\\de descriptores};
+\node[op=2.5cm] (g4) [below=of g3] {Interpretación física\\de resultados};
 \draw[flow] (g1) -- (g2);  \draw[flow] (g2) -- (g3);  \draw[flow] (g3) -- (g4);
+\draw[flow] (g0.east) -- ++(0.17,0) |- (g2.east);
 
+% =====================================================================
+% Recuadros de las etapas (todos llegan a la misma altura)
+% =====================================================================
+\path let \p1 = (v5.south), \p2 = (w3.south) in coordinate (fondo) at (0, {min(\y1,\y2) - 4pt});
 \begin{scope}[on background layer]
-\node[stage=violet, fit=(t4)(e1)(w2)] (s4) {};
-\node[stage=green,  fit=(t5)(f1)(w3)] (s5) {};
-\node[stage=teal,   fit=(t6)(g1)(g4)] (s6) {};
+\node[stage=c1, fit=(h1)(a5)(h1 |- fondo)] (s1) {};
+\node[stage=c2, fit=(h2)(b0)(v5)(h2 |- fondo)] (s2) {};
+\node[stage=c3, fit=(h3)(c1)(c3)(c5)(m5)(h3 |- fondo)] (s3) {};
+\node[stage=c4, fit=(h4)(w2)(h4 |- fondo)] (s4) {};
+\node[stage=c5, fit=(h5)(w3)(h5 |- fondo)] (s5) {};
+\node[stage=c6, fit=(h6)(g4)(h6 |- fondo)] (s6) {};
 \end{scope}
 
 % =====================================================================
 % Flujo entre etapas
 % =====================================================================
-\draw[big] (s1.east |- t1) -- (s2.west |- t1);
-\draw[big] (s2.east |- t2) -- (s3.west |- t2);
-\draw[big] (s3.south) -- (s4.north);
-\draw[big] (s4.west |- t4) -- (s5.east |- t4);
-\draw[big] (s5.west |- t5) -- (s6.east |- t5);
+% Cada flecha sale de la matriz de salida, sube por el espacio entre recuadros
+% y entra a la operación o matriz de destino.
+\coordinate (g12) at ($(s1.east)!0.5!(s2.west)$);
+\coordinate (g23) at ($(s2.east)!0.5!(s3.west)$);
+\coordinate (g34) at ($(s3.east)!0.5!(s4.west)$);
+\coordinate (g45) at ($(s4.east)!0.5!(s5.west)$);
+\coordinate (g56) at ($(s5.east)!0.5!(s6.west)$);
+\draw[link=black] (a3.east) -- (a3.east -| g12) |- (b0.west);
+\draw[semithick] (a4.east) -- (a4.east -| g12) -- (a3.east -| g12);
+\draw[link=black] (v5.east) -- (v5.east -| g23) |- (m0.west);
+\draw[link=black] (m5.east) -- (m5.east -| g34) |- (w0.west);
+\draw[link=black] (w2.east) -- (w2.east -| g45) |- (f1.west);
+\draw[link=black] (w3.east) -- (w3.east -| g56) |- (g1.west);
+
+% =====================================================================
+% Convenciones
+% =====================================================================
+\coordinate (ley) at ($(s1.south west)+(0.15,-0.55)$);
+\node[anchor=west, font=\footnotesize\bfseries] (kt) at (ley) {Convenciones:};
+\node[draw=c1, fill=c1!6, rounded corners=2pt, minimum width=0.9cm, minimum height=0.45cm, anchor=west] (k1) at ($(kt.east)+(0.3,0)$) {};
+\node[anchor=west, align=left] (l1) at (k1.east) {Etapas principales\\(numeradas)};
+\node[draw, rounded corners=1pt, minimum width=0.9cm, minimum height=0.45cm, anchor=west] (k2) at ($(l1.east)+(0.3,0)$) {};
+\node[anchor=west, align=left] (l2) at (k2.east) {Operaciones};
+\node[var, minimum width=0.9cm, minimum height=0.4cm, anchor=west] (k3) at ($(l2.east)+(0.3,0)$) {};
+\node[anchor=west, align=left] (l3) at (k3.east) {Matrices de entrada\\o de salida};
+\node[dec, minimum width=0.9cm, minimum height=0.45cm, anchor=west] (k4) at ($(l3.east)+(0.3,0)$) {};
+\node[anchor=west, align=left] (l4) at (k4.east) {Decisión};
+\draw[flow] ($(l4.east)+(0.3,0)$) -- ++(0.8,0) node[right] (l5) {Flujo dentro de una etapa};
+\draw[link=black] ($(l5.east)+(0.3,0)$) -- ++(0.8,0) node[right, align=left] (l7) {Paso entre etapas};
+\begin{scope}[on background layer]
+\node[draw, rounded corners=2pt, fit=(kt)(k1)(l1)(l7), inner sep=4pt] {};
+\end{scope}
 \end{tikzpicture}
 \end{document}

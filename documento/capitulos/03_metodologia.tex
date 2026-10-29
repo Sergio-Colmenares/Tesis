@@ -7,20 +7,24 @@ La Figura~\ref{fig:met_panorama} presenta el panorama general de la metodología
 \begin{enumerate}
     \item \textbf{Adquisición.} De cada archivo de medición se extraen dos matrices de $N\times N$ valores: el canal eléctrico $E_0$ y el canal topográfico $H_0$.
     \item \textbf{Preprocesamiento.} Reduce el ruido del canal eléctrico y aumenta el contraste entre la red de nanotubos y la matriz polimérica. Ambos canales se normalizan ($\tilde E$, $\tilde H$); a partir de $\tilde H$ se estima la componente del canal eléctrico asociada a la topografía, $\hat E_H$, cuya resta produce el canal corregido de crosstalk, $E_{\mathrm{CT}}$. Sobre este se aplican sucesivamente un filtro de ruido impulsivo ($E_{\mathrm{SP}}$), una corrección de fondo por línea de barrido ($E_{\mathrm{BG}}$) y un filtro de líneas horizontales ($E_{\mathrm{FL}}$). Finalmente, los valores se escalan al intervalo $[0,1]$, lo que produce la matriz de entrada de la segmentación, $E_{\mathrm{seg}}$.
-    \item \textbf{Segmentación.} Clasifica cada píxel de $E_{\mathrm{seg}}$ como red o como fondo. Tres binarizaciones de distinta escala espacial producen las máscaras $M_L$, $M_R$ y $M_G$, que se combinan en la máscara $M_\wedge$. Si la fracción de píxeles clasificados como red en $M_\wedge$ es menor que el 15~\%, se emplea en su lugar una máscara de respaldo. La máscara seleccionada se denomina máscara final, $M_{\mathrm{F}}$.
-    \item \textbf{Representaciones de trabajo.} A partir de $M_{\mathrm{F}}$ se construyen la máscara morfológica $M_{\mathrm{C}}$, mediante un cierre morfológico, y el esqueleto $S$ de la red. Las tres representaciones, $M_{\mathrm{F}}$, $M_{\mathrm{C}}$ y $S$, son la entrada de la extracción de descriptores.
-    \item \textbf{Extracción de descriptores.} Sobre las representaciones de trabajo se calculan 13 descriptores morfológicos, agrupados en distribución espacial, forma, orientación y conectividad. Los descriptores de las 81 mediciones forman la matriz de descriptores $X$, de $81\times13$, en la que cada fila corresponde a una medición y cada columna a un descriptor.
-    \item \textbf{Análisis.} La matriz $X$ se analiza de forma exploratoria y se relaciona con la eficacia de apantallamiento (SE) mediante modelos interpretables, cuyo análisis de importancia de descriptores sustenta la interpretación física.
+    \item \textbf{Extracción de máscara.} Mediante una segmentación multiescala, clasifica cada píxel de $E_{\mathrm{seg}}$ como red o como fondo. Tres binarizaciones de distinta escala espacial producen las máscaras $M_L$, $M_R$ y $M_G$, que se combinan en la máscara $M_\wedge$. Si la fracción de píxeles clasificados como red en $M_\wedge$ es menor que el 15~\%, se emplea en su lugar una máscara de respaldo. La máscara seleccionada se denomina máscara final, $M_{\mathrm{F}}$.
+    \item \textbf{Matrices para la extracción de descriptores.} A partir de $M_{\mathrm{F}}$ se construyen la máscara morfológica $M_{\mathrm{C}}$, mediante un cierre morfológico, y el esqueleto $S$ de la red. Las tres matrices, $M_{\mathrm{F}}$, $M_{\mathrm{C}}$ y $S$, son la entrada de la extracción de descriptores.
+    \item \textbf{Extracción de descriptores.} Sobre estas matrices se calculan 13 descriptores morfológicos, agrupados en distribución espacial, forma, orientación y conectividad. Los descriptores de las 81 mediciones forman la matriz de descriptores $X$, de $81\times13$, en la que cada fila corresponde a una medición y cada columna a un descriptor.
+    \item \textbf{Análisis de resultados.} La matriz $X$ se analiza de forma exploratoria y se relaciona con la eficacia de apantallamiento (SE) mediante modelos interpretables, cuyo análisis de importancia de descriptores sustenta la interpretación física.
 \end{enumerate}
 
 Las etapas 1 a 4 se describen en la Sección~\ref{sec:met_procesamiento}, la etapa 5 en la Sección~\ref{sec:met_descriptores} y la etapa 6 en la Sección~\ref{sec:met_analisis}.
 
-\begin{figure}[H]
+\afterpage{%
+\begin{landscape}
+\begin{figure}[p]
 \centering
-\includegraphics[width=\textwidth]{diagrama_metodologia.pdf}
-\caption{Panorama general de la metodología. Los rectángulos representan operaciones, los paralelogramos las matrices que entran y salen de cada operación, y el rombo la decisión de respaldo de la segmentación. Las flechas gruesas indican el paso de una etapa a la siguiente.}
+\includegraphics[width=\linewidth]{diagrama_metodologia.pdf}
+\caption{Panorama general de la metodología. Los rectángulos representan operaciones, los paralelogramos las matrices que entran y salen de cada operación, y el rombo la decisión de respaldo de la extracción de máscara. Las flechas gruesas indican el paso de una etapa a la siguiente.}
 \label{fig:met_panorama}
 \end{figure}
+\end{landscape}
+}
 
 Los nombres de las matrices siguen una convención única, resumida en la Tabla~\ref{tab:nomenclatura}. La letra $E$ designa el canal eléctrico; $H$, la altura topográfica; $M$, una máscara binaria; $S$, el esqueleto; y $X$, la matriz de descriptores. El subíndice 0 identifica los datos originales; la tilde, la normalización robusta; el acento circunflejo, un valor estimado mediante un ajuste; y los subíndices en letra recta, la operación que produce cada matriz, según su abreviatura: CT, corrección de crosstalk; SP, filtro de sal y pimienta; BG, corrección de fondo (del inglés \emph{background}); FL, filtrado de líneas; seg, entrada de la segmentación; F, máscara final; y C, cierre morfológico.
 
@@ -64,7 +68,7 @@ La visualización de los canales topográfico y eléctrico se hace con el propó
 
 A lo largo del procesamiento se emplean dos estadísticos de orden, la mediana y el percentil, sobre un conjunto de valores $x$, por ejemplo todos los píxeles de una matriz o todos los de una fila. La mediana, $\mathrm{med}(x)$, es el valor central del conjunto ordenado, o el promedio de los dos valores centrales si el número de valores es par. El percentil $q$, $P_q(x)$, es el valor por debajo del cual se encuentra el $q$~\% de los valores; se calcula con la función \texttt{prctile} de MATLAB, que interpola linealmente entre los valores ordenados.
 
-Las secciones siguientes describen las operaciones de la Figura~\ref{fig:met_panorama} en el mismo orden en que se aplican: las del preprocesamiento (Secciones~\ref{sec:met_crosstalk} a \ref{sec:met_norm}), la segmentación (Sección~\ref{sec:met_binarizacion}) y la construcción de las representaciones de trabajo (Sección~\ref{sec:met_representaciones}).
+Las secciones siguientes describen las operaciones de la Figura~\ref{fig:met_panorama} en el mismo orden en que se aplican: las del preprocesamiento (Secciones~\ref{sec:met_crosstalk} a \ref{sec:met_norm}), la extracción de máscara (Sección~\ref{sec:met_binarizacion}) y la construcción de las matrices para la extracción de descriptores (Sección~\ref{sec:met_representaciones}).
 
 \subsection{Corrección de Crosstalk Topográfico}
 \label{sec:met_crosstalk}
@@ -338,10 +342,10 @@ La Figura~\ref{fig:met_binarizacion} ilustra las binarizaciones y su integració
 \end{figure}
 
 
-\subsection{Representaciones de Trabajo}
+\subsection{Matrices para la Extracción de Descriptores}
 \label{sec:met_representaciones}
 
-A partir de la salida de la segmentación se construyen tres representaciones binarias que sirven como insumo común a los distintos grupos de descriptores:
+A partir de la salida de la segmentación se construyen tres matrices binarias que sirven como insumo común a los distintos grupos de descriptores:
 
 \begin{itemize}
     \item \textbf{Máscara final:} Contiene únicamente los píxeles clasificados como parte de red por la segmentación. Corresponde a $M_{\mathrm{F}}$, definida en (\ref{eq:bin_final}).
@@ -349,12 +353,12 @@ A partir de la salida de la segmentación se construyen tres representaciones bi
     \item \textbf{Esqueleto:} Se obtiene mediante la función \texttt{bwskel} sobre la máscara morfológica. Esta función adelgaza cada componente conexa eliminando de forma iterativa píxeles de sus bordes, sin desconectarla ni abrir o cerrar huecos, hasta reducirla a líneas de 1 px de grosor que siguen su eje central y conservan su topología. Posteriormente se aplican cinco iteraciones de poda de píxeles mediante \texttt{bwmorph(\texttt{'spur'}, 5)}: en cada iteración se eliminan los puntos extremos del esqueleto, es decir, los píxeles con un solo vecino de valor 1 entre sus 8 vecinos. De este modo se recortan progresivamente las ramas y se eliminan las ramas espurias cortas, de hasta aproximadamente 5 px, que aparecen al esqueletizar bordes irregulares, evitando inflar artificialmente los descriptores basados en él. Las ramas largas pierden también hasta 5 px en su extremo libre. El esqueleto resultante se denota $S$.
 \end{itemize}
 
-La Figura~\ref{fig:met_representaciones} muestra las representaciones de trabajo de la medición 0c-2.
+La Figura~\ref{fig:met_representaciones} muestra las matrices para la extracción de descriptores de la medición 0c-2.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.67\textwidth]{metodologia/met_representaciones.pdf}
-\caption{Representaciones de trabajo de la medición 0c-2. (a) Máscara morfológica $M_{\mathrm{C}}$. (b) Esqueleto $S$ (rojo) superpuesto a $M_{\mathrm{C}}$ (gris).}
+\caption{Matrices para la extracción de descriptores de la medición 0c-2. (a) Máscara morfológica $M_{\mathrm{C}}$. (b) Esqueleto $S$ (rojo) superpuesto a $M_{\mathrm{C}}$ (gris).}
 \label{fig:met_representaciones}
 \end{figure}
 
@@ -362,7 +366,7 @@ La Figura~\ref{fig:met_representaciones} muestra las representaciones de trabajo
 \section{Extracción de Descriptores Morfológicos}
 \label{sec:met_descriptores}
 
-Una vez construidas las máscaras que aíslan las regiones de nanotubos, se calculan los descriptores morfológicos propuestos. Por la diversidad de las características medidas, los descriptores se evalúan sobre diferentes representaciones de la red. Los diferentes descriptores se describen a continuación.
+Una vez construidas las máscaras que aíslan las regiones de nanotubos, se calculan los descriptores morfológicos propuestos. Por la diversidad de las características medidas, los descriptores se evalúan sobre las distintas matrices de la Sección~\ref{sec:met_representaciones}. Los diferentes descriptores se describen a continuación.
 
 
 
