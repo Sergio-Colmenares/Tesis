@@ -25,7 +25,7 @@
 ## Versión final: pauta de figuras (resolución nativa)
 Pauta 13: cada figura debe ser nítida y en formato vectorizado (PDF). Para la versión final, todos los mapas deben poder verse píxel a píxel al hacer zoom.
 - **Diagrama de la metodología:** ya cumple (PDF vectorial, miniaturas de 1024×1024 sin interpolar).
-- **Figuras `met_*`:** son PDF, pero rasterizadas a ~500 px por panel (`exportgraphics(..., 'ContentType', 'image')`). Las fuentes para rehacerlas ya están en `documento/figuras/metodologia/met_*.tex`; falta generar los paneles con el bloque de MATLAB (carpeta `paneles/`) y compilar.
+- **Figuras `met_*`:** ✅ ya cumplen: se arman desde paneles de 1024×1024 (`documento/figuras/metodologia/paneles/`, fuentes `met_*.tex`), con títulos vectoriales.
 - **Figuras del Cap. 4 y anexos:** revisar con el mismo criterio cuando se trabajen.
 
 ## Validación del procesamiento: referencia (para discutir con el director)
