@@ -27,3 +27,18 @@ Pauta 13: cada figura debe ser nítida y en formato vectorizado (PDF). Para la v
 - **Diagrama de la metodología:** ya cumple (PDF vectorial, miniaturas de 1024×1024 sin interpolar).
 - **Figuras `met_*`:** son PDF, pero rasterizadas a ~500 px por panel (`exportgraphics(..., 'ContentType', 'image')`). Las fuentes para rehacerlas ya están en `documento/figuras/metodologia/met_*.tex`; falta generar los paneles con el bloque de MATLAB (carpeta `paneles/`) y compilar.
 - **Figuras del Cap. 4 y anexos:** revisar con el mismo criterio cuando se trabajen.
+
+## Validación del procesamiento: referencia (para discutir con el director)
+Las métricas actuales (cobertura, N_c, FN = N_c/c, CV entre mediciones, píxeles reemplazados, varianza entre filas, barridos de r y de poda) miden **consistencia interna**, no exactitud: ninguna compara contra una segmentación de referencia.
+
+- **Binarización de la imagen cruda (propuesta del autor):** sirve como **línea base**, no como referencia. Contiene los defectos que el procesamiento corrige (crosstalk, ruido impulsivo, fondo por línea), así que coincidir con ella premiaría corregir menos. Útil para mostrar el efecto del procesamiento sobre cobertura, FN y su estabilidad (en parte ya existe: método de [4] sobre E_0).
+- **Opciones de referencia real:**
+  - **A. Anotación manual de un subconjunto:** recortes (p. ej. 256×256) en 5 a 9 mediciones de distintas condiciones; métricas Dice, precisión y exhaustividad frente a M_F. Subjetiva; con dos anotadores se mide su acuerdo.
+  - **B. Imágenes sintéticas con red conocida:** máscara verdadera + defectos modelados con parámetros medidos (desplazamientos por línea, ruido impulsivo, crosstalk con topografía real). Verdad exacta; depende del realismo del modelo.
+  - **C. Solo consistencia interna**, declarada como alcance de la validación, más la línea base de la imagen cruda.
+- **Recomendación:** C + una versión pequeña de A.
+
+### Propuestas pendientes de confirmar (relacionadas)
+- Nueva subsección **3.1.8 "Validación del procesamiento y elección de parámetros"**: métricas definidas una vez, barridos y **criterio de elección explícito** (cobertura intermedia, CV de cobertura mínimo, FN entre Q1 y la mediana); remisiones desde cada parámetro en 3.1.1–3.1.7. El barrido RLOESS se elimina (E_B retirado).
+- ¿Incluir la validación de los parámetros de orientación (σ_d = 2, σ_i = 8; `codigo/orientacion/`)?
+- Párrafo más explícito de la etapa 5 (descriptores) en la introducción del Cap. 3: borrador propuesto en la conversación (familias, qué mide cada una y sobre qué matriz).
