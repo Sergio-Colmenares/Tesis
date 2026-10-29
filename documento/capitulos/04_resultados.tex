@@ -216,7 +216,7 @@ La binarización local recupera estructuras de alta definición pero introduce f
 \includegraphics[width=\textwidth]{10_bw2_2b.pdf}\\[2pt]
 \includegraphics[width=\textwidth]{11_bw2closed_2b.pdf}\\[2pt]
 \includegraphics[width=\textwidth]{12_skel_2b.pdf}
-\caption{Mosaicos $3\times3$ del set 2b tras la integración. Arriba: máscara estricta $M_{e}$. Centro: máscara morfológica $M_{mor}$. Abajo: esqueleto.}
+\caption{Mosaicos $3\times3$ del set 2b tras la integración. Arriba: máscara estricta $M_{\mathrm{F}}$. Centro: máscara morfológica $M_{\mathrm{C}}$. Abajo: esqueleto.}
 \label{fig:res_bin_postproc}
 
 \end{minipage}\hfill
@@ -228,7 +228,7 @@ La binarización local recupera estructuras de alta definición pero introduce f
 \footnotesize
 \begin{tabular}{lccccc}
 \toprule
-\textbf{Imagen / Estad.} & \textbf{Cob. $M_{e}$} & \textbf{$N_{c}$ $M_{e}$} & \textbf{Cob. $M_{mor}$} & \textbf{$N_{c}$ $M_{mor}$} & \textbf{Skel [px]} \\
+\textbf{Imagen / Estad.} & \textbf{Cob. $M_{\mathrm{F}}$} & \textbf{$N_{c}$ $M_{\mathrm{F}}$} & \textbf{Cob. $M_{\mathrm{C}}$} & \textbf{$N_{c}$ $M_{\mathrm{C}}$} & \textbf{Skel [px]} \\
 \midrule
 2b-1 & $0.2005$ & $132$ & $0.2304$ & $\phantom{0}99$ & $12\,634$ \\
 2b-2 & $0.2120$ & $155$ & $0.2531$ & $107$ & $13\,767$ \\
@@ -258,7 +258,7 @@ La binarización local recupera estructuras de alta definición pero introduce f
 \end{minipage}
 \end{figure}
  
-La Tabla~\ref{tab:bin_2b} reporta la cobertura y el número de componentes conexas sobre la máscara estricta $M_{e}$ y sobre la máscara morfológica $M_{mor}$, junto con la longitud del esqueleto en píxeles, para cada una de las 9 imágenes del set 2b, con los resúmenes estadísticos del set y del conjunto global.
+La Tabla~\ref{tab:bin_2b} reporta la cobertura y el número de componentes conexas sobre la máscara estricta $M_{\mathrm{F}}$ y sobre la máscara morfológica $M_{\mathrm{C}}$, junto con la longitud del esqueleto en píxeles, para cada una de las 9 imágenes del set 2b, con los resúmenes estadísticos del set y del conjunto global.
  
  
 La cobertura sobre la máscara estricta presenta una desviación estándar de $0.0070$ entre las 9 imágenes del set 2b, frente a $0.0155$ a nivel global. La cobertura sobre la máscara morfológica es sistemáticamente mayor que la estricta (paso de $0.2132$ a $0.2444$ en el set 2b y de $0.2202$ a $0.2597$ a nivel global), reflejando el efecto del cierre que rellena huecos y une componentes vecinos. El número de componentes conexas se reduce sistemáticamente al aplicar el cierre, con un promedio de paso de $151.2$ a $116.7$ componentes para el set 2b y de $180.6$ a $120.5$ a nivel global. La longitud del esqueleto en el set 2b oscila entre $10\,479$ y $13\,863$~px, mientras que en el dataset completo abarca un rango más amplio que va de $8\,045$ a $32\,688$~px.
@@ -276,7 +276,7 @@ La configuración del pipeline depende de cinco parámetros (sensibilidad, píxe
     \item Número de clases en Otsu: $\{4, 5, 6, 8\}$.
 \end{itemize}
  
-La combinación de variantes genera $1\,344$ configuraciones que, evaluadas sobre las 81 imágenes, producen $217\,728$ filas de validación. La Figura~\ref{fig:res_validacion_param} reporta la cobertura media y el número medio de componentes conexas $N_c$ al variar cada parámetro manteniendo los otros cuatro fijos en sus valores del pipeline. Ambas métricas se computan sobre la máscara estricta $M_e$ (sin cierre morfológico).
+La combinación de variantes genera $1\,344$ configuraciones que, evaluadas sobre las 81 imágenes, producen $217\,728$ filas de validación. La Figura~\ref{fig:res_validacion_param} reporta la cobertura media y el número medio de componentes conexas $N_c$ al variar cada parámetro manteniendo los otros cuatro fijos en sus valores del pipeline. Ambas métricas se computan sobre la máscara estricta $M_{\mathrm{F}}$ (sin cierre morfológico).
  
 \begin{figure}[H]
     \centering
@@ -375,12 +375,12 @@ En conjunto, la comparación empírica respalda la elección del Triple AND como
 \section{Validación de las Representaciones de Trabajo}
 \label{sec:representaciones}
  
-Las máscaras y el esqueleto definidos en la Sección de Metodología dependen de tres parámetros que no se barrieron en la sección anterior: el radio del cierre morfológico que define $M_{mor}$, la ventana de la corrección de rayas RLOESS empleada para construir la imagen eléctrica reconstruida $I_B$, y el número de iteraciones de poda de pixeles aplicado al esqueleto. Esta sección reporta la validación empírica de los parámetros que más influyen sobre los descriptores derivados.
+Las máscaras y el esqueleto definidos en la Sección de Metodología dependen de tres parámetros que no se barrieron en la sección anterior: el radio del cierre morfológico que define $M_{\mathrm{C}}$, la ventana de la corrección de rayas RLOESS empleada para construir la imagen eléctrica reconstruida $I_B$, y el número de iteraciones de poda de pixeles aplicado al esqueleto. Esta sección reporta la validación empírica de los parámetros que más influyen sobre los descriptores derivados.
  
 \subsection{Radio del Cierre Morfológico}
 \label{sec:radio_cierre}
  
-Para examinar si la elección $r=3$ px representa un punto de operación adecuado para el cierre morfológico que define $M_{mor}$, se realizó un barrido del radio sobre las 81 imágenes del dataset manteniendo la configuración del pipeline fija. Se evaluaron nueve valores de radio entre $1$ y $10$~px ($\sim$59--586~nm en escala física). Para cada radio se midieron, sobre la máscara morfológica resultante, la cobertura, el número de componentes, la longitud del esqueleto post-poda, el índice de percolación, y dos métricas diferenciales respecto a la máscara estricta $M_e$: el material agregado ($\Delta\text{cob}$) y las componentes fusionadas ($\Delta N_c$).
+Para examinar si la elección $r=3$ px representa un punto de operación adecuado para el cierre morfológico que define $M_{\mathrm{C}}$, se realizó un barrido del radio sobre las 81 imágenes del dataset manteniendo la configuración del pipeline fija. Se evaluaron nueve valores de radio entre $1$ y $10$~px ($\sim$59--586~nm en escala física). Para cada radio se midieron, sobre la máscara morfológica resultante, la cobertura, el número de componentes, la longitud del esqueleto post-poda, el índice de percolación, y dos métricas diferenciales respecto a la máscara estricta $M_{\mathrm{F}}$: el material agregado ($\Delta\text{cob}$) y las componentes fusionadas ($\Delta N_c$).
  
 \begin{table}[H]
 \centering
@@ -389,7 +389,7 @@ Para examinar si la elección $r=3$ px representa un punto de operación adecuad
 \small
 \begin{tabular}{ccccccccc}
 \toprule
-\textbf{$r$ [px]} & \textbf{$r$ [nm]} & \textbf{Cob. $M_{mor}$} & \textbf{$N_c$ $M_{mor}$} & \textbf{$\Delta$ cob.} & \textbf{$\Delta N_c$} & \textbf{Skel [$\mu$m]} & \textbf{$d(\Delta\text{cob})/dr$} & \textbf{$d(\Delta N_c)/dr$} \\
+\textbf{$r$ [px]} & \textbf{$r$ [nm]} & \textbf{Cob. $M_{\mathrm{C}}$} & \textbf{$N_c$ $M_{\mathrm{C}}$} & \textbf{$\Delta$ cob.} & \textbf{$\Delta N_c$} & \textbf{Skel [$\mu$m]} & \textbf{$d(\Delta\text{cob})/dr$} & \textbf{$d(\Delta N_c)/dr$} \\
 \midrule
 $\phantom{0}1$ & $\phantom{0}58.6$ & $0.2421$ & $143.8$ & $0.0218$ & $\phantom{00}36.9$ & $1\,259$           & --       & --       \\
 $\phantom{0}2$ & $117.2$           & $0.2533$ & $129.7$ & $0.0331$ & $\phantom{00}51.0$ & $\phantom{0\,}899$ & $0.0112$ & $14.09$  \\
@@ -415,7 +415,7 @@ En conjunto, la elección $r=3$ px ($\sim 176$~nm) coincide con el régimen en e
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{barrido_radio_cierre.pdf}
-    \caption{Comportamiento del cierre morfológico al variar el radio del elemento estructurante. Paneles: (a) material agregado $\Delta\text{cob}$, (b) componentes fusionadas $\Delta N_c$, (c) longitud del esqueleto $M_{mor}$ post-poda, (d) índice de percolación. El valor $r=3$ corresponde a la elección del pipeline.}
+    \caption{Comportamiento del cierre morfológico al variar el radio del elemento estructurante. Paneles: (a) material agregado $\Delta\text{cob}$, (b) componentes fusionadas $\Delta N_c$, (c) longitud del esqueleto $M_{\mathrm{C}}$ post-poda, (d) índice de percolación. El valor $r=3$ corresponde a la elección del pipeline.}
     \label{fig:res_barrido_radio}
 \end{figure}
 
@@ -423,7 +423,7 @@ En conjunto, la elección $r=3$ px ($\sim 176$~nm) coincide con el régimen en e
 \subsection{Ventana de la Corrección RLOESS}
 \label{sec:ventana_rloess}
  
-La imagen eléctrica reconstruida $I_B$ depende del tamaño de la ventana empleada por la función \texttt{smoothdata} con método \texttt{rloess} en la corrección de rayas verticales. El pipeline emplea una ventana de $50$ filas. Para validar esta elección se realizó un barrido sobre ocho valores de ventana entre $10$ y $300$ filas, manteniendo la configuración del pipeline en todas las demás etapas. Para cada ventana se evaluaron, sobre $I_B$ y sobre la máscara estricta $M_e$ del pipeline real, tres descriptores del perfil vertical y los cuatro descriptores de intensidad (media, desviación estándar, percentil 90 y gradiente medio).
+La imagen eléctrica reconstruida $I_B$ depende del tamaño de la ventana empleada por la función \texttt{smoothdata} con método \texttt{rloess} en la corrección de rayas verticales. El pipeline emplea una ventana de $50$ filas. Para validar esta elección se realizó un barrido sobre ocho valores de ventana entre $10$ y $300$ filas, manteniendo la configuración del pipeline en todas las demás etapas. Para cada ventana se evaluaron, sobre $I_B$ y sobre la máscara estricta $M_{\mathrm{F}}$ del pipeline real, tres descriptores del perfil vertical y los cuatro descriptores de intensidad (media, desviación estándar, percentil 90 y gradiente medio).
  
 \subsubsection*{Comportamiento del perfil corregido}
  
@@ -605,12 +605,12 @@ tres métodos reproduce el descenso monótono $2.2 \rightarrow 2.0 \rightarrow 1
 reportado en [4]: el pipeline arroja $2.33 \rightarrow 2.65 \rightarrow 2.58$
 (correlación de Spearman con el voltaje $\rho=-0.01$); el método de [4], sobre las
 imágenes en que es evaluable, $0.08 \rightarrow 0.54 \rightarrow 0.23$
-($\rho=-0.13$); y el umbral de [4] sobre $I_{seg}$, $0.96 \rightarrow 1.09
+($\rho=-0.13$); y el umbral de [4] sobre $E_{\mathrm{seg}}$, $0.96 \rightarrow 1.09
 \rightarrow 1.86$ ($\rho=+0.16$).
  
 \subsubsection{Intensidad}
  
-Los descriptores de intensidad se computan sobre la señal eléctrica corregida $I_B$ (canal del segundo armónico, en metros calibrados por el sistema con la sensibilidad del 2.º armónico Amp2InvOLS) restringida a la máscara estricta $M_e$. La Figura~\ref{fig:res_desc_intensidad} muestra sus distribuciones.
+Los descriptores de intensidad se computan sobre la señal eléctrica corregida $I_B$ (canal del segundo armónico, en metros calibrados por el sistema con la sensibilidad del 2.º armónico Amp2InvOLS) restringida a la máscara estricta $M_{\mathrm{F}}$. La Figura~\ref{fig:res_desc_intensidad} muestra sus distribuciones.
  
 \begin{figure}[H]
     \centering
@@ -623,7 +623,7 @@ La intensidad media presenta una distribución asimétrica con mediana $253$~pm 
  
 \subsubsection{Morfología}
  
-Los descriptores morfológicos se computan sobre los componentes conexos de la máscara morfológica $M_{mor}$. La Figura~\ref{fig:res_desc_morfologia} reporta las distribuciones del área media, su desviación estándar, la elongación media y la tortuosidad media.
+Los descriptores morfológicos se computan sobre los componentes conexos de la máscara morfológica $M_{\mathrm{C}}$. La Figura~\ref{fig:res_desc_morfologia} reporta las distribuciones del área media, su desviación estándar, la elongación media y la tortuosidad media.
  
 \begin{figure}[H]
     \centering
@@ -653,7 +653,7 @@ predominantemente isótropas, sin una dirección colectiva marcada. Igualmente, 
  
 \subsubsection{Conectividad y Topología}
  
-Los descriptores de cobertura total y número de fragmentos coinciden por construcción con la cobertura $M_e$ y el número de componentes reportados en la Tabla~\ref{tab:bin_2b}, por lo que no se reportan nuevamente. La Figura~\ref{fig:res_desc_conectividad} reporta los dos descriptores adicionales: el índice de percolación y la longitud de la red.
+Los descriptores de cobertura total y número de fragmentos coinciden por construcción con la cobertura $M_{\mathrm{F}}$ y el número de componentes reportados en la Tabla~\ref{tab:bin_2b}, por lo que no se reportan nuevamente. La Figura~\ref{fig:res_desc_conectividad} reporta los dos descriptores adicionales: el índice de percolación y la longitud de la red.
  
 \begin{figure}[H]
     \centering

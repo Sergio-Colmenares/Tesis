@@ -1,89 +1,135 @@
 \chapter{Metodología}
 
-Este capítulo describe los procedimientos aplicados sobre el conjunto de datos de microscopía de fuerza electrostática de segundo armónico (EFM-2$\omega$) empleado en este trabajo. La descripción se organiza en torno a los objetivos específicos del proyecto (Sección~\ref{sec:objetivos}), registrando la metodología aplicada en aquellos en que sea necesaria, con el fin de asegurar la claridad y reproducibilidad del trabajo. Estos objetivos son: el procesamiento digital de los datos de microscopía para reducir el ruido y aumentar el contraste de la red de nanotubos respecto a la matriz polimérica, la extracción de descriptores morfológicos físicamente interpretables a partir de las imágenes procesadas y los procedimientos de ML enfocados en la relación SE-descriptores.
+Este capítulo describe los procedimientos aplicados sobre el conjunto de datos de microscopía de fuerza electrostática de segundo armónico (EFM-2$\omega$) empleado en este trabajo. La descripción se organiza en torno a los objetivos específicos del proyecto (Sección~\ref{sec:objetivos}), registrando la metodología aplicada en aquellos en que sea necesaria, con el fin de asegurar la claridad y reproducibilidad del trabajo. Estos objetivos son: el procesamiento digital de los datos de microscopía para reducir el ruido y aumentar el contraste de la red de nanotubos respecto a la matriz polimérica, la extracción de descriptores morfológicos físicamente interpretables a partir de las matrices procesadas y los procedimientos de ML enfocados en la relación SE-descriptores.
+
+La Figura~\ref{fig:met_panorama} presenta el panorama general de la metodología, organizada en seis etapas. En la figura, los rectángulos representan operaciones, los paralelogramos las matrices que entran y salen de cada operación, y el rombo una decisión. Cada operación recibe una o varias matrices y entrega una nueva, de modo que el procesamiento puede seguirse como una cadena de matrices con nombre propio:
+
+\begin{enumerate}
+    \item \textbf{Adquisición.} De cada archivo de medición se extraen dos matrices de $N\times N$ valores: el canal eléctrico $E_0$ y el canal topográfico $H_0$.
+    \item \textbf{Preprocesamiento.} Reduce el ruido del canal eléctrico y aumenta el contraste entre la red de nanotubos y la matriz polimérica. Ambos canales se normalizan ($\tilde E$, $\tilde H$); a partir de $\tilde H$ se estima la componente del canal eléctrico asociada a la topografía, $\hat E_H$, cuya resta produce el canal corregido de crosstalk, $E_{\mathrm{CT}}$. Sobre este se aplican sucesivamente un filtro de ruido impulsivo ($E_{\mathrm{SP}}$), una corrección de fondo por línea de barrido ($E_{\mathrm{BG}}$) y un filtro de líneas horizontales ($E_{\mathrm{FL}}$). Finalmente, los valores se escalan al intervalo $[0,1]$, lo que produce la matriz de entrada de la segmentación, $E_{\mathrm{seg}}$.
+    \item \textbf{Segmentación.} Clasifica cada píxel de $E_{\mathrm{seg}}$ como red o como fondo. Tres binarizaciones de distinta escala espacial producen las máscaras $M_L$, $M_R$ y $M_G$, que se combinan en la máscara $M_\wedge$. Si la fracción de píxeles clasificados como red en $M_\wedge$ es menor que el 15~\%, se emplea en su lugar una máscara de respaldo. La máscara seleccionada se denomina máscara final, $M_{\mathrm{F}}$.
+    \item \textbf{Representaciones de trabajo.} A partir de $M_{\mathrm{F}}$ se construyen la máscara morfológica $M_{\mathrm{C}}$, mediante un cierre morfológico, y el esqueleto $S$ de la red. Las tres representaciones, $M_{\mathrm{F}}$, $M_{\mathrm{C}}$ y $S$, son la entrada de la extracción de descriptores.
+    \item \textbf{Extracción de descriptores.} Sobre las representaciones de trabajo se calculan 13 descriptores morfológicos, agrupados en distribución espacial, forma, orientación y conectividad. Los descriptores de las 81 mediciones forman la matriz de descriptores $X$, de $81\times13$, en la que cada fila corresponde a una medición y cada columna a un descriptor.
+    \item \textbf{Análisis.} La matriz $X$ se analiza de forma exploratoria y se relaciona con la eficacia de apantallamiento (SE) mediante modelos interpretables, cuyo análisis de importancia de descriptores sustenta la interpretación física.
+\end{enumerate}
+
+Las etapas 1 a 4 se describen en la Sección~\ref{sec:met_procesamiento}, la etapa 5 en la Sección~\ref{sec:met_descriptores} y la etapa 6 en la Sección~\ref{sec:met_analisis}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{diagrama_metodologia.pdf}
+\caption{Panorama general de la metodología. Los rectángulos representan operaciones, los paralelogramos las matrices que entran y salen de cada operación, y el rombo la decisión de respaldo de la segmentación. Las flechas gruesas indican el paso de una etapa a la siguiente.}
+\label{fig:met_panorama}
+\end{figure}
+
+Los nombres de las matrices siguen una convención única, resumida en la Tabla~\ref{tab:nomenclatura}. La letra $E$ designa el canal eléctrico; $H$, la altura topográfica; $M$, una máscara binaria; $S$, el esqueleto; y $X$, la matriz de descriptores. El subíndice 0 identifica los datos originales; la tilde, la normalización robusta; el acento circunflejo, un valor estimado mediante un ajuste; y los subíndices en letra recta, la operación que produce cada matriz, según su abreviatura: CT, corrección de crosstalk; SP, filtro de sal y pimienta; BG, corrección de fondo (del inglés \emph{background}); FL, filtrado de líneas; seg, entrada de la segmentación; F, máscara final; y C, cierre morfológico.
+
+\begin{table}[H]
+\centering
+\caption{Nomenclatura de las matrices de la metodología. La columna ``Se obtiene de'' indica las matrices de entrada de la operación que produce cada una.}
+\label{tab:nomenclatura}
+\small
+\begin{tabular}{@{}l p{7.4cm} l l@{}}
+\toprule
+\textbf{Símbolo} & \textbf{Descripción} & \textbf{Se obtiene de} & \textbf{Sección} \\
+\midrule
+$E_0$ & Canal eléctrico original (unidades nominales) & Archivo .ibw & \ref{sec:met_procesamiento} \\
+$H_0$ & Canal topográfico original & Archivo .ibw & \ref{sec:met_procesamiento} \\
+$\tilde E$, $\tilde H$ & Canales eléctrico y topográfico normalizados por mediana y MAD & $E_0$, $H_0$ & \ref{sec:met_crosstalk} \\
+$\hat E_H$ & Componente del canal eléctrico estimada a partir de la topografía & $\tilde E$, $\tilde H$ & \ref{sec:met_crosstalk} \\
+$E_{\mathrm{CT}}$ & Canal eléctrico corregido de crosstalk & $\tilde E$, $\hat E_H$ & \ref{sec:met_crosstalk} \\
+$E_{\mathrm{SP}}$ & Canal eléctrico filtrado de ruido impulsivo & $E_{\mathrm{CT}}$ & \ref{sec:met_syp} \\
+$E_{\mathrm{BG}}$ & Canal eléctrico corregido de fondo por línea de barrido & $E_{\mathrm{SP}}$ & \ref{sec:met_fondo} \\
+$E_{\mathrm{FL}}$ & Canal eléctrico filtrado de líneas horizontales & $E_{\mathrm{BG}}$ & \ref{sec:met_lineas} \\
+$E_{\mathrm{seg}}$ & Canal eléctrico normalizado entre $P_1$ y $P_{99}$, en $[0,1]$ & $E_{\mathrm{FL}}$ & \ref{sec:met_norm} \\
+$M_L$, $M_R$, $M_G$ & Máscaras de las binarizaciones local, regional y global & $E_{\mathrm{seg}}$ & \ref{sec:met_binarizacion} \\
+$M_\wedge$ & Conjunción de $M_L$, $M_R$ y $M_G$, con área mínima por componente & $M_L$, $M_R$, $M_G$ & \ref{sec:met_binarizacion} \\
+$M_{\mathrm{F}}$ & Máscara final: $M_\wedge$ o, si se activa el respaldo, la máscara local con área mínima & $M_\wedge$, $M_L$ & \ref{sec:met_binarizacion} \\
+$M_{\mathrm{C}}$ & Máscara morfológica, tras el cierre morfológico & $M_{\mathrm{F}}$ & \ref{sec:met_representaciones} \\
+$S$ & Esqueleto podado de la red & $M_{\mathrm{C}}$ & \ref{sec:met_representaciones} \\
+$X$ & Matriz de descriptores, de $81\times13$ & $M_{\mathrm{F}}$, $M_{\mathrm{C}}$, $S$ & \ref{sec:met_descriptores} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Procesamiento Digital de Imágenes}
-Las mediciones de microscopía se obtienen en formato .ibw (Igor Binary Wave), el formato de salida del microscopio MFP-3D (Asylum Research) con el que fueron adquiridas. Estos archivos contienen múltiples canales de información adquiridos durante el escaneo EFM-2$\omega$; cada canal es una matriz de $N\times N$ mediciones, con $N = 1024$, que cubre un área de barrido de $60\times60$~$\mu$m, con una separación $\Delta = 60~\mu\text{m}/1024 \approx 58.6$~nm entre mediciones contiguas. En este trabajo se emplean dos canales: el canal eléctrico $I_{raw}$, que corresponde a la amplitud del segundo armónico de la vibración del cantiléver y es proporcional al gradiente de capacitancia $\partial C/\partial z$ [5], y el canal topográfico $T_{raw}$, que recoge las mediciones de variación de altura en la superficie de la muestra, información necesaria para corregir su influencia sobre el canal eléctrico como primer paso del procesamiento, descrito a continuación (Sección~\ref{sec:met_crosstalk}).
+\label{sec:met_procesamiento}
+Las mediciones de microscopía se obtienen en formato .ibw (Igor Binary Wave), el formato de salida del microscopio MFP-3D (Asylum Research) con el que fueron adquiridas. Estos archivos contienen múltiples canales de información adquiridos durante el escaneo EFM-2$\omega$; cada canal es una matriz de $N\times N$ valores reales, con $N = 1024$, que cubre un área de barrido de $60\times60$~$\mu$m. Cada elemento de la matriz se denomina píxel, y la resolución espacial es de $\Delta = 60~\mu\text{m}/1024 \approx 58.6$~nm por píxel. En este trabajo se emplean dos canales: el canal eléctrico $E_0$, que corresponde a la amplitud del segundo armónico de la vibración del cantiléver y es proporcional al gradiente de capacitancia $\partial C/\partial z$ [5], y el canal topográfico $H_0$, que recoge las mediciones de altura de la superficie de la muestra.
 
-El conjunto de datos está formado por 81 mediciones: nueve condiciones de fabricación, resultado de combinar tres voltajes (5, 10 y 15~V) y tres frecuencias (10~Hz, 1~kHz y 100~kHz) [4], con tres réplicas por condición y tres posiciones de medición por réplica. Cada medición se identifica con un código de la forma \texttt{Vf-n}: \texttt{V} indica el voltaje (0, 1 y 2 para 5, 10 y 15~V), \texttt{f} la frecuencia (a, b y c para 10~Hz, 1~kHz y 100~kHz) y $n \in \{1, \dots, 9\}$ la medición, de modo que las mediciones 1--3, 4--6 y 7--9 corresponden a la primera, segunda y tercera réplica. El conjunto de las nueve mediciones de una condición se denomina \emph{set}; por ejemplo, el set 2b corresponde a 15~V y 1~kHz.
+El conjunto de datos está formado por 81 mediciones: nueve condiciones de fabricación, resultado de combinar tres voltajes (5, 10 y 15~V) y tres frecuencias (10~Hz, 1~kHz y 100~kHz) [4], con tres réplicas por condición y tres posiciones de medición por réplica. Cada medición se identifica con un código de la forma \texttt{Vf-n}: \texttt{V} indica el voltaje (0, 1 y 2 para 5, 10 y 15~V, respectivamente), \texttt{f} la frecuencia (a, b y c para 10~Hz, 1~kHz y 100~kHz, respectivamente) y $n \in \{1, \dots, 9\}$ la medición, de modo que las mediciones 1--3, 4--6 y 7--9 corresponden a la primera, segunda y tercera réplica, respectivamente. El conjunto de las nueve mediciones de una condición de fabricación se denomina \emph{set}; por ejemplo, el set 2b corresponde a 15~V y 1~kHz.
 
-Ambos canales se importan en MATLAB y se rotan $90^\circ$ (\texttt{rot90}), de modo que cada fila de la matriz corresponde a una línea de barrido. Para su procesamiento, cada matriz se trata como una imagen digital en escala de grises, es decir, como una función bidimensional discreta cuyo valor en cada posición es la medición correspondiente [6], lo cual permite aplicar las operaciones de procesamiento digital de imágenes descritas en este capítulo. Bajo esta interpretación, cada elemento de la matriz se denomina píxel; las filas se indexan con $i$ (eje $y$), las columnas con $j$ (eje $x$, a lo largo de la línea de barrido), y los parámetros espaciales se expresan en píxeles (1~px $= \Delta \approx 58.6$~nm). El valor de un canal $X$ en el píxel de la fila $i$ y la columna $j$, con $i, j \in \{1, \dots, N\}$, se denota $X(i,j)$. El canal topográfico se guarda nivelado por el software de adquisición, que resta a cada línea de barrido su ajuste lineal (nivelado de primer orden), mientras que el canal eléctrico se guarda sin nivelar. La sensibilidad de la detección del segundo armónico no se calibró durante la adquisición, por lo que el canal eléctrico se expresa en unidades nominales: es proporcional al valor real con un factor desconocido, constante dentro de cada medición pero no necesariamente entre sesiones de medición.
+Ambos canales se extraen del archivo .ibw en MATLAB con la función \texttt{IBWread}, que emplea las funciones auxiliares \texttt{readIBWheaders} y \texttt{readIBWbinheader} para leer los encabezados del archivo [ref. pendiente]. Cada matriz extraída se rota $90^\circ$ (\texttt{rot90}), de modo que su orientación coincida con la que presenta el software del microscopio, en la que cada fila de la matriz corresponde a una línea de barrido. Cada matriz contiene valores reales y no una imagen digital en sentido estricto, cuyos valores estarían cuantizados en niveles de gris; sin embargo, al estar organizada como una función bidimensional discreta de la posición, admite las operaciones de procesamiento digital de imágenes [6], cuya terminología se adopta en este capítulo. Las filas se indexan con $i$ (eje $y$), las columnas con $j$ (eje $x$, a lo largo de la línea de barrido), y los parámetros espaciales se expresan en píxeles (1~px $= \Delta \approx 58.6$~nm). El valor de una matriz genérica $Y$ en el píxel de la fila $i$ y la columna $j$, con $i, j \in \{1, \dots, N\}$, se denota $Y(i,j)$. El canal topográfico se guarda nivelado por defecto por el software de adquisición del microscopio: esta nivelación resta a cada línea de barrido su ajuste lineal (nivelado de primer orden). El canal eléctrico, en cambio, se guarda sin nivelar. La sensibilidad de la detección del segundo armónico no se calibró durante la adquisición, por lo que el canal eléctrico se expresa en unidades nominales: es proporcional al valor real con un factor desconocido, constante dentro de cada medición pero no necesariamente entre sesiones de medición.
 
-La visualización de las matrices es un proceso paralelo al procesamiento y no interviene en ningún cálculo. Para inspeccionar cada etapa y construir las figuras de este documento, cada matriz se representa como una imagen en color con la función \texttt{imagesc} de MATLAB y ejes de igual escala (\texttt{axis image}), de modo que cada píxel se dibuja como un cuadrado de $\Delta$ de lado. Cada píxel se representa con un color del mapa de color \emph{viridis} (256 colores), asignado según su valor. La asignación es lineal entre dos límites: para las matrices de valores continuos, sus percentiles 1 y 99, de modo que los valores fuera de ese rango toman el color del extremo correspondiente; para las máscaras binarias, los valores 0 y 1. Salvo que se indique lo contrario en la figura, los límites se calculan por separado para cada matriz, por lo que los colores de dos figuras distintas no son comparables entre sí.
+La visualización de los canales topográfico y eléctrico se hace con el propósito de inspeccionar cada etapa del procesamiento y construir las figuras de este documento; es un proceso paralelo al procesamiento y no interviene en ningún cálculo. Para esto se usa la función \texttt{imagesc} de MATLAB con ejes de igual escala (\texttt{axis image}), de modo que cada píxel se dibuja como un cuadrado de $\Delta$ de lado. Cada píxel se representa con un color del mapa de color \emph{viridis} (256 colores), asignado según su valor. La asignación es lineal entre dos límites: para las matrices de valores continuos, sus percentiles 1 y 99, de modo que los valores fuera de ese rango toman el color del extremo correspondiente; para las máscaras binarias, los valores 0 y 1. Salvo que se indique lo contrario en la figura, los límites se calculan por separado para cada matriz, por lo que los colores de dos figuras distintas no son comparables entre sí.
 
-A lo largo del procesamiento se emplean dos estadísticos de orden sobre un conjunto de valores $x$, por ejemplo todos los píxeles de una medición o todos los de una fila. La mediana, $\mathrm{med}(x)$, es el valor central del conjunto ordenado (el promedio de los dos centrales si el número de valores es par). El percentil $q$, $P_q(x)$, es el valor por debajo del cual se encuentra el $q$~\% de los valores; se calcula con la función \texttt{prctile} de MATLAB, que interpola linealmente entre los valores ordenados.
+A lo largo del procesamiento se emplean dos estadísticos de orden, la mediana y el percentil, sobre un conjunto de valores $x$, por ejemplo todos los píxeles de una matriz o todos los de una fila. La mediana, $\mathrm{med}(x)$, es el valor central del conjunto ordenado, o el promedio de los dos valores centrales si el número de valores es par. El percentil $q$, $P_q(x)$, es el valor por debajo del cual se encuentra el $q$~\% de los valores; se calcula con la función \texttt{prctile} de MATLAB, que interpola linealmente entre los valores ordenados.
 
-El procesamiento aplica al canal eléctrico la siguiente secuencia de operaciones, descritas en las secciones siguientes en el mismo orden en que se aplican:
-
-\begin{equation}
-I_{raw} \xrightarrow{\ \text{crosstalk}\ } I_{corr} \xrightarrow{\ \text{SyP } 5\times5\ } I_{syp} \xrightarrow{\ \text{fondo}\ } I_{fondo} \xrightarrow{\ \text{líneas } 5\times1\ } I_{clean} \xrightarrow{\ P_1\text{--}P_{99}\ } I_{seg} \xrightarrow{\ \text{binarización}\ } M_{e}
-\label{eq:cadena}
-\end{equation}
-
-A partir de la máscara $M_e$ y de una reconstrucción del canal eléctrico en su escala original, $I_B$, se construyen las representaciones de trabajo sobre las que se calculan los descriptores (Sección~\ref{sec:met_representaciones}).
+Las secciones siguientes describen las operaciones de la Figura~\ref{fig:met_panorama} en el mismo orden en que se aplican: las del preprocesamiento (Secciones~\ref{sec:met_crosstalk} a \ref{sec:met_norm}), la segmentación (Sección~\ref{sec:met_binarizacion}) y la construcción de las representaciones de trabajo (Sección~\ref{sec:met_representaciones}).
 
 \subsection{Corrección de Crosstalk Topográfico}
 \label{sec:met_crosstalk}
 
-Como primera etapa se elimina el crosstalk topográfico [8], una de las componentes de ruido visualmente más presentes del dataset. Esta corrección se aplica antes que cualquier otra operación que pueda alterar la relación entre el canal eléctrico y el topográfico.
+Como primera etapa se elimina el crosstalk topográfico [8], una de las componentes de ruido visualmente más presentes del dataset: la aparición, en el canal eléctrico, de rasgos de la topografía de la superficie, como bordes de rayones y partículas. El propósito de la corrección es reconocer la contribución de la matriz topográfica dentro de la matriz eléctrica y retirarla.
 
 Ambos canales se normalizan primero de forma robusta, restando su mediana y dividiendo por su desviación absoluta mediana (MAD):
 
 \begin{equation}
 \begin{gathered}
-\tilde I(i,j) = \frac{I_{raw}(i,j) - \mathrm{med}(I_{raw})}{\mathrm{MAD}(I_{raw})}, \qquad
-\tilde T(i,j) = \frac{T_{raw}(i,j) - \mathrm{med}(T_{raw})}{\mathrm{MAD}(T_{raw})}, \\[4pt]
+\tilde E(i,j) = \frac{E_0(i,j) - \mathrm{med}(E_0)}{\mathrm{MAD}(E_0)}, \qquad
+\tilde H(i,j) = \frac{H_0(i,j) - \mathrm{med}(H_0)}{\mathrm{MAD}(H_0)}, \\[4pt]
 \mathrm{MAD}(x) = \mathrm{med}\left(\left|x - \mathrm{med}(x)\right|\right)
 \end{gathered}
 \label{eq:norm_robusta}
 \end{equation}
 
-donde $\tilde I$ y $\tilde T$ son los canales eléctrico y topográfico normalizados (la tilde indica normalización), adimensionales y comparables entre sí, y la mediana y la MAD de cada canal se calculan sobre todos los píxeles de la medición. Se emplean la mediana y la MAD en lugar de la media y la desviación estándar porque no se ven afectadas por valores extremos derivados del ruido.
+donde $\tilde E$ y $\tilde H$ son los canales eléctrico y topográfico normalizados (la tilde indica normalización), adimensionales y comparables entre sí, y la mediana y la MAD de cada canal se calculan sobre todos los píxeles de la matriz. Se emplean la mediana y la MAD en lugar de la media y la desviación estándar porque no se ven afectadas por valores extremos derivados del ruido.
 
-A partir de los canales normalizados se ajusta un modelo de regresión lineal múltiple de la forma:
+A partir de los canales eléctrico y topográfico normalizados, se construye un modelo de regresión lineal múltiple para estimar la contribución de la topografía sobre la señal eléctrica. Se considera que dicha contribución puede describirse mediante una combinación lineal de tres variables: la altura topográfica local y sus variaciones espaciales en las direcciones horizontal y vertical. El modelo se expresa como:
 
 \begin{equation}
-\tilde I(i,j) = \beta_0 + \beta_1 \tilde T(i,j) + \beta_2 \frac{\partial \tilde T}{\partial x}(i,j) + \beta_3 \frac{\partial \tilde T}{\partial y}(i,j) + \varepsilon(i,j)
+\tilde E(i,j) = \beta_0 + \beta_1 \tilde H(i,j) + \beta_2 \frac{\partial \tilde H}{\partial x}(i,j) + \beta_3 \frac{\partial \tilde H}{\partial y}(i,j) + \varepsilon(i,j)
 \label{eq:crosstalk}
 \end{equation}
 
-donde $\beta_0, \dots, \beta_3$ son los coeficientes del modelo, $\varepsilon(i,j)$ es el residuo, y $\partial \tilde T/\partial x$ y $\partial \tilde T/\partial y$ son las variaciones direccionales de la topografía, calculadas por diferencias centrales (función \texttt{gradient} de MATLAB):
+donde $\tilde E(i,j)$ y $\tilde H(i,j)$ representan los valores normalizados de los canales eléctrico y topográfico en el píxel $(i,j)$, respectivamente. Los parámetros $\beta_0, \dots, \beta_3$ son los coeficientes desconocidos del modelo, mientras que $\varepsilon(i,j)$ corresponde al residuo, es decir, a la parte de la señal eléctrica que no es explicada por las variables topográficas consideradas. Las variaciones espaciales de la topografía se calculan mediante diferencias finitas centrales, utilizando la función \texttt{gradient} de MATLAB:
 
 \begin{equation}
-\frac{\partial \tilde T}{\partial x}(i,j) = \frac{\tilde T(i,j+1) - \tilde T(i,j-1)}{2}, \qquad
-\frac{\partial \tilde T}{\partial y}(i,j) = \frac{\tilde T(i+1,j) - \tilde T(i-1,j)}{2}
+\frac{\partial \tilde H}{\partial x}(i,j) = \frac{\tilde H(i,j+1) - \tilde H(i,j-1)}{2}, \qquad
+\frac{\partial \tilde H}{\partial y}(i,j) = \frac{\tilde H(i+1,j) - \tilde H(i-1,j)}{2}
 \label{eq:diferencias}
 \end{equation}
 
-expresadas por píxel; en la primera y la última columna (o fila) se usa la diferencia de un solo lado, por ejemplo $\tilde T(i,2) - \tilde T(i,1)$.
+Estas derivadas se expresan por píxel. En los bordes de la matriz se utilizan diferencias de un solo lado, por ejemplo $\tilde H(i,2) - \tilde H(i,1)$ en la primera columna.
 
-El modelo se ajusta una sola vez por medición, sobre la matriz completa: cada uno de los $N^2$ píxeles aporta una ecuación de la forma (\ref{eq:crosstalk}), y los coeficientes se estiman por mínimos cuadrados, es decir, como los valores $\hat\beta_0, \dots, \hat\beta_3$ que minimizan la suma de los residuos al cuadrado sobre todos los píxeles:
+Para estimar los coeficientes del modelo, se consideran simultáneamente todos los píxeles de cada medición. Dado que las matrices tienen dimensiones de $N\times N$, cada píxel proporciona una observación que relaciona el valor eléctrico con la topografía y sus dos gradientes espaciales. De esta manera, se dispone de $N^2 = 1\,048\,576$ observaciones para estimar cuatro coeficientes, cuyos valores son comunes a toda la medición. Los coeficientes se determinan mediante el método de mínimos cuadrados, que busca los valores de $\beta_0, \dots, \beta_3$ que minimizan la suma de los residuos al cuadrado:
 
 \begin{equation}
 (\hat\beta_0, \dots, \hat\beta_3) = \arg\min_{\beta_0, \dots, \beta_3} \sum_{i=1}^{N} \sum_{j=1}^{N} \varepsilon(i,j)^2
 \label{eq:minimos_cuadrados}
 \end{equation}
 
-Este problema se resuelve con el operador \texttt{\textbackslash} de MATLAB, mediante factorización QR. En consecuencia, cada medición dispone de un único conjunto de coeficientes. Con ellos se construye la componente del canal eléctrico explicada por la topografía:
+El acento circunflejo indica que se trata de un coeficiente estimado a partir de los datos experimentales. Este problema se resuelve mediante el operador \texttt{\textbackslash} de MATLAB, que plantea los mínimos cuadrados en forma matricial y los resuelve por factorización QR. Como resultado, se obtiene un único conjunto de cuatro coeficientes estimados para cada medición. Una vez determinados estos coeficientes, se sustituyen en el modelo para calcular, en cada píxel, la componente de la señal eléctrica explicada por las variables topográficas:
 
 \begin{equation}
-\hat I_T(i,j) = \hat\beta_0 + \hat\beta_1 \tilde T(i,j) + \hat\beta_2 \frac{\partial \tilde T}{\partial x}(i,j) + \hat\beta_3 \frac{\partial \tilde T}{\partial y}(i,j)
+\hat E_H(i,j) = \hat\beta_0 + \hat\beta_1 \tilde H(i,j) + \hat\beta_2 \frac{\partial \tilde H}{\partial x}(i,j) + \hat\beta_3 \frac{\partial \tilde H}{\partial y}(i,j)
 \label{eq:crosstalk_ajuste}
 \end{equation}
 
-donde el acento circunflejo indica que se trata de un valor estimado por el ajuste y el subíndice $T$, que es la parte atribuida a la topografía. $\hat I_T$ es un mapa con un valor distinto en cada píxel, que se resta píxel a píxel al canal eléctrico normalizado, eliminando las variaciones originadas en la topografía:
+Aunque los coeficientes estimados son constantes para toda la medición, los valores de la topografía y sus gradientes cambian entre píxeles. Por tanto, la evaluación de esta expresión produce una matriz $\hat E_H$ de las mismas dimensiones que los canales originales, que representa la componente de la señal eléctrica asociada estadísticamente con la topografía; el subíndice $H$ identifica la variable explicativa. Finalmente, esta componente se resta píxel a píxel del canal eléctrico normalizado:
 
 \begin{equation}
-I_{corr}(i,j) = \tilde I(i,j) - \hat I_T(i,j)
+E_{\mathrm{CT}}(i,j) = \tilde E(i,j) - \hat E_H(i,j)
 \label{eq:crosstalk_resta}
 \end{equation}
 
-Por construcción de los mínimos cuadrados, $I_{corr}$ tiene media nula y correlación nula con $\tilde T$ y con sus derivadas, por lo que la correlación posterior a la corrección no mide su efectividad. Por esta razón, el efecto de la corrección se examina visualmente, comparando para una misma medición el canal topográfico, el canal eléctrico normalizado $\tilde I$ y el canal corregido $I_{corr}$, con atención a las huellas topográficas, como bordes de rayones y partículas superficiales. La Figura~\ref{fig:met_crosstalk} muestra esta comparación para la medición 0a-5.
+La matriz resultante $E_{\mathrm{CT}}$ contiene los residuos del modelo de regresión y constituye la entrada para las siguientes operaciones de procesamiento. Esta corrección permite reducir las contribuciones eléctricas asociadas linealmente con la topografía y sus gradientes, aunque no garantiza distinguir completamente entre artefactos instrumentales y variaciones eléctricas físicamente correlacionadas con la morfología superficial.
+
+Por construcción de los mínimos cuadrados, $E_{\mathrm{CT}}$ tiene media nula y correlación nula con $\tilde H$ y con sus derivadas, por lo que la correlación posterior a la corrección no mide su efectividad. Por esta razón, el efecto de la corrección se examina visualmente, comparando para una misma medición el canal topográfico, el canal eléctrico normalizado $\tilde E$ y el canal corregido $E_{\mathrm{CT}}$, con atención a las huellas topográficas, como bordes de rayones y partículas superficiales. La Figura~\ref{fig:met_crosstalk} muestra esta comparación para la medición 0a-5.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{metodologia/met_crosstalk.pdf}
-\caption{Corrección de crosstalk topográfico en la medición 0a-5. (a) Canal topográfico normalizado $\tilde T$, en escala de grises. (b) Canal eléctrico normalizado $\tilde I$. (c) Canal corregido $I_{corr}$. Los paneles (b) y (c) comparten los límites de color, fijados en los percentiles 1 y 99 de $\tilde I$.}
+\caption{Corrección de crosstalk topográfico en la medición 0a-5. (a) Canal topográfico normalizado $\tilde H$, en escala de grises. (b) Canal eléctrico normalizado $\tilde E$. (c) Canal corregido $E_{\mathrm{CT}}$. Los paneles (b) y (c) comparten los límites de color, fijados en los percentiles 1 y 99 de $\tilde E$.}
 \label{fig:met_crosstalk}
 \end{figure}
 
@@ -91,7 +137,7 @@ Por construcción de los mínimos cuadrados, $I_{corr}$ tiene media nula y corre
 \subsection{Filtrado de Ruido Impulsivo}
 \label{sec:met_syp}
 
-Para eliminar el ruido impulsivo se emplea un filtro de mediana bidimensional [6] aplicado de forma selectiva. El filtro se describe para una matriz de entrada genérica $X$ y una ventana (kernel) de $a\times b$ píxeles ($a$ filas por $b$ columnas, ambos impares); en esta etapa, $a = b = 5$. El procedimiento tiene tres pasos.
+Para eliminar el ruido impulsivo se emplea un filtro de mediana bidimensional [6] aplicado de forma selectiva. El filtro se describe para una matriz de entrada genérica $Y$ y una ventana (kernel) de $a\times b$ píxeles ($a$ filas por $b$ columnas, ambos impares); en esta etapa, $a = b = 5$. El procedimiento tiene tres pasos.
 
 Primero, la ventana se centra en cada píxel $(i,j)$ y abarca el conjunto de píxeles
 
@@ -103,13 +149,13 @@ W_{a\times b}(i,j) = \left\{ (u,v) : |u - i| \le \tfrac{a-1}{2},\ |v - j| \le \t
 esto es, el píxel central y los píxeles situados a una distancia de hasta $(a-1)/2$ filas y $(b-1)/2$ columnas de él. El filtro de mediana asigna a cada píxel la mediana de los $a\cdot b$ valores de su ventana:
 
 \begin{equation}
-X_{med}(i,j) = \mathrm{med}\left\{ X(u,v) : (u,v) \in W_{a\times b}(i,j) \right\}
+Y_{med}(i,j) = \mathrm{med}\left\{ Y(u,v) : (u,v) \in W_{a\times b}(i,j) \right\}
 \label{eq:mediana}
 \end{equation}
 
 En los bordes de la matriz, las posiciones de la ventana que quedan fuera se completan con ceros (comportamiento por defecto de la función \texttt{medfilt2} de MATLAB). La mediana es insensible a los propios outliers: un valor aislado extremo queda en un extremo del conjunto ordenado y no modifica el valor central, propiedad que la hace adecuada para la eliminación de ruido impulsivo.
 
-Segundo, sobre el residuo $R(i,j) = X(i,j) - X_{med}(i,j)$ obtenido entre la matriz previa $X$ y la posterior al filtro $X_{med}$ se estima la desviación típica del ruido, $\hat\sigma_{SyP}$, mediante un estimador robusto basado en la mediana absoluta, calculado una sola vez con todos los píxeles de la medición:
+Segundo, sobre el residuo $R(i,j) = Y(i,j) - Y_{med}(i,j)$ obtenido entre la matriz previa $Y$ y la posterior al filtro $Y_{med}$ se estima la desviación típica del ruido, $\hat\sigma_{SyP}$, mediante un estimador robusto basado en la mediana absoluta, calculado una sola vez con todos los píxeles de la matriz:
 
 \begin{equation}
 \hat\sigma_{SyP} = \frac{\mathrm{med}(|R|)}{0.6745}
@@ -121,22 +167,22 @@ El factor $0.6745$ es el percentil 75 de la distribución normal estándar, $\Ph
 Tercero, los píxeles cuyo residuo supera $\lambda$ veces dicha estimación, con $\lambda$ un umbral fijado para cada instancia del filtro, se reemplazan por el valor del filtro de mediana; el resto conserva su valor original. El resultado del filtro es
 
 \begin{equation}
-X_{out}(i,j) =
+Y_{out}(i,j) =
 \begin{cases}
-X_{med}(i,j), & |R(i,j)| > \lambda\,\hat\sigma_{SyP} \\
-X(i,j), & \text{en otro caso}
+Y_{med}(i,j), & |R(i,j)| > \lambda\,\hat\sigma_{SyP} \\
+Y(i,j), & \text{en otro caso}
 \end{cases}
 \label{eq:impulsivo}
 \end{equation}
 
 De este modo, a diferencia de un filtro de mediana convencional, solo se modifican los píxeles anómalos y el resto de la matriz conserva su resolución.
 
-En esta etapa el filtro se aplica con $X = I_{corr}$, inmediatamente después de la corrección de crosstalk, con ventana $5\times5$ y umbral $\lambda=3$, para eliminar outliers tipo sal y pimienta (SyP); el resultado se denota $I_{syp}$. El mismo filtro se reutiliza más adelante, con otra ventana y otro umbral, para eliminar líneas impulsivas horizontales (Sección~\ref{sec:met_lineas}). La Figura~\ref{fig:met_syp} ilustra esta etapa sobre la medición 0c-2.
+En esta etapa el filtro se aplica con $Y = E_{\mathrm{CT}}$, inmediatamente después de la corrección de crosstalk, con ventana $5\times5$ y umbral $\lambda=3$, para eliminar outliers tipo sal y pimienta (SyP); el resultado $Y_{out}$ se denota $E_{\mathrm{SP}}$. El mismo filtro se reutiliza más adelante, con otra ventana y otro umbral, para eliminar líneas impulsivas horizontales (Sección~\ref{sec:met_lineas}). La Figura~\ref{fig:met_syp} ilustra esta etapa sobre la medición 0c-2.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{metodologia/met_syp.pdf}
-\caption{Filtrado de ruido impulsivo en la medición 0c-2. (a) Matriz de entrada $I_{corr}$. (b) Resultado $I_{syp}$. (c) Píxeles reemplazados por el valor del filtro de mediana. Los paneles (a) y (b) comparten los límites de color.}
+\caption{Filtrado de ruido impulsivo en la medición 0c-2. (a) Matriz de entrada $E_{\mathrm{CT}}$. (b) Resultado $E_{\mathrm{SP}}$. (c) Píxeles reemplazados por el valor del filtro de mediana. Los paneles (a) y (b) comparten los límites de color.}
 \label{fig:met_syp}
 \end{figure}
 
@@ -144,7 +190,7 @@ En esta etapa el filtro se aplica con $X = I_{corr}$, inmediatamente después de
 \subsection{Corrección de Fondo por Línea de Barrido}
 \label{sec:met_fondo}
 
-Tras la corrección de crosstalk y la limpieza de outliers, se ajusta el nivel de cada fila para eliminar los desplazamientos de nivel entre líneas de barrido derivados del proceso de escaneo [8]. Para cada fila se asume que los píxeles de menor intensidad representan el fondo polimérico, ya que los CNTs aparecen como valores altos del gradiente de capacitancia. Se analiza el vector de intensidad de la fila $i$ de $I_{syp}$, $\mathbf{f}_i = \left(I_{syp}(i,1), \dots, I_{syp}(i,N)\right)$, cuyo elemento $j$ se denota $f_i(j)$, y se calcula un índice de variabilidad relativa:
+Tras la corrección de crosstalk y la limpieza de outliers, se ajusta el nivel de cada fila para eliminar los desplazamientos de nivel entre líneas de barrido derivados del proceso de escaneo [8]. Para cada fila se asume que los píxeles de menor intensidad representan el fondo polimérico, ya que los CNTs aparecen como valores altos del gradiente de capacitancia. Se analiza el vector de intensidad de la fila $i$ de $E_{\mathrm{SP}}$, $\mathbf{f}_i = \left(E_{\mathrm{SP}}(i,1), \dots, E_{\mathrm{SP}}(i,N)\right)$, cuyo elemento $j$ se denota $f_i(j)$, y se calcula un índice de variabilidad relativa:
 
 \begin{equation}
 \rho_i = \frac{\mathrm{MAD}(\mathbf{f}_i)}{P_{95}(\mathbf{f}_i) - P_{5}(\mathbf{f}_i)}
@@ -157,7 +203,7 @@ donde $\mathrm{MAD}(\mathbf{f}_i)$ es la desviación absoluta mediana de la fila
 \begin{gathered}
 q_i = \min\left(45,\ \max\left(25,\ 40 - 20\,\rho_i\right)\right), \\[4pt]
 b_i = \mathrm{med}\left\{ f_i(j) : f_i(j) \le P_{q_i}(\mathbf{f}_i) \right\}, \\[4pt]
-I_{fondo}(i,j) = f_i(j) - b_i
+E_{\mathrm{BG}}(i,j) = f_i(j) - b_i
 \end{gathered}
 \label{eq:fondo}
 \end{equation}
@@ -167,7 +213,7 @@ Como $\rho_i \ge 0$, el percentil nunca supera el 40~\%, y la cota inferior solo
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{metodologia/met_fondo.pdf}
-\caption{Corrección de fondo por línea de barrido en la medición 2a-1. (a) Matriz de entrada $I_{syp}$. (b) Resultado $I_{fondo}$. (c) Mediana de cada fila antes (gris) y después (negro) de la corrección, en función de la fila $i$.}
+\caption{Corrección de fondo por línea de barrido en la medición 2a-1. (a) Matriz de entrada $E_{\mathrm{SP}}$. (b) Resultado $E_{\mathrm{BG}}$. (c) Mediana de cada fila antes (gris) y después (negro) de la corrección, en función de la fila $i$.}
 \label{fig:met_fondo}
 \end{figure}
 
@@ -175,12 +221,12 @@ Como $\rho_i \ge 0$, el percentil nunca supera el 40~\%, y la cota inferior solo
 \subsection{Filtrado de Líneas Horizontales}
 \label{sec:met_lineas}
 
-Tras la corrección de fondo pueden permanecer tramos de línea de barrido cuyo nivel difiere del de las líneas vecinas, que se manifiestan como líneas impulsivas horizontales. Para eliminarlos se aplica nuevamente el filtro de la Sección~\ref{sec:met_syp} sobre $I_{fondo}$, con $X = I_{fondo}$, una ventana vertical de $5\times1$ ($a = 5$ filas por $b = 1$ columna) y umbral $\lambda=2$; la estimación $\hat\sigma_{SyP}$ de (\ref{eq:mad}) se recalcula para esta instancia. Con esta ventana, cada píxel se compara únicamente con los dos píxeles superiores y los dos inferiores de su misma columna: un tramo de línea desplazado respecto a sus vecinas produce un residuo grande y se reemplaza, mientras que una ventana horizontal no detectaría este defecto, dado que los vecinos del píxel pertenecerían a la misma línea defectuosa. El resultado se denota $I_{clean}$. La Figura~\ref{fig:met_lineas} ilustra esta etapa sobre la medición 0c-2.
+Tras la corrección de fondo pueden permanecer tramos de línea de barrido cuyo nivel difiere del de las líneas vecinas, que se manifiestan como líneas impulsivas horizontales. Para eliminarlos se aplica nuevamente el filtro de la Sección~\ref{sec:met_syp}, con $Y = E_{\mathrm{BG}}$, una ventana vertical de $5\times1$ ($a = 5$ filas por $b = 1$ columna) y umbral $\lambda=2$; la estimación $\hat\sigma_{SyP}$ de (\ref{eq:mad}) se recalcula para esta instancia. Con esta ventana, cada píxel se compara únicamente con los dos píxeles superiores y los dos inferiores de su misma columna: un tramo de línea desplazado respecto a sus vecinas produce un residuo grande y se reemplaza, mientras que una ventana horizontal no detectaría este defecto, dado que los vecinos del píxel pertenecerían a la misma línea defectuosa. El resultado $Y_{out}$ se denota $E_{\mathrm{FL}}$. La Figura~\ref{fig:met_lineas} ilustra esta etapa sobre la medición 0c-2.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{metodologia/met_lineas.pdf}
-\caption{Filtrado de líneas horizontales en la medición 0c-2. (a) Matriz de entrada $I_{fondo}$. (b) Resultado $I_{clean}$. (c) Píxeles reemplazados por el valor del filtro de mediana con ventana vertical de $5\times1$. Los paneles (a) y (b) comparten los límites de color.}
+\caption{Filtrado de líneas horizontales en la medición 0c-2. (a) Matriz de entrada $E_{\mathrm{BG}}$. (b) Resultado $E_{\mathrm{FL}}$. (c) Píxeles reemplazados por el valor del filtro de mediana con ventana vertical de $5\times1$. Los paneles (a) y (b) comparten los límites de color.}
 \label{fig:met_lineas}
 \end{figure}
 
@@ -188,10 +234,10 @@ Tras la corrección de fondo pueden permanecer tramos de línea de barrido cuyo 
 \subsection{Normalización}
 \label{sec:met_norm}
 
-Finalmente, se aplica una normalización robusta entre los percentiles 1 y 99 de $I_{clean}$, $P_1 = P_1(I_{clean})$ y $P_{99} = P_{99}(I_{clean})$, calculados sobre todos los píxeles de la medición, para escalar los datos al intervalo $[0,1]$ y estandarizar el contraste de cara a la binarización:
+Finalmente, se aplica una normalización robusta entre los percentiles 1 y 99 de $E_{\mathrm{FL}}$, $P_1 = P_1(E_{\mathrm{FL}})$ y $P_{99} = P_{99}(E_{\mathrm{FL}})$, calculados sobre todos los píxeles de la matriz, para escalar los datos al intervalo $[0,1]$ y estandarizar el contraste de cara a la binarización:
 
 \begin{equation}
-I_{seg}(i,j) = \max\left(0,\; \min\left(1,\; \frac{I_{clean}(i,j) - P_{1}}{P_{99} - P_{1}}\right)\right)
+E_{\mathrm{seg}}(i,j) = \max\left(0,\; \min\left(1,\; \frac{E_{\mathrm{FL}}(i,j) - P_{1}}{P_{99} - P_{1}}\right)\right)
 \label{eq:norm}
 \end{equation}
 
@@ -202,74 +248,92 @@ El 1~\% de valores extremos de cada lado se satura en 0 y en 1, de modo que unos
 
 Esta etapa separa los píxeles pertenecientes a la red de nanotubos del fondo polimérico. Como los CNTs se encuentran a distintas profundidades dentro del polímero, modificando la señal captada por el microscopio, se requiere un método capaz de detectar tanto regiones superficiales como profundas, manteniendo la morfología y la continuidad espacial de la red, especialmente cuando se presentan cambios de profundidad.
 
-La segmentación se construye como una combinación de tres binarizaciones complementarias sobre $I_{seg}$: local, global y regional, cuyas máscaras se integran por conjunción.
+La segmentación se construye como una combinación de tres binarizaciones complementarias sobre $E_{\mathrm{seg}}$: local, global y regional, cuyas máscaras se integran por conjunción. Cada máscara es una matriz de $N\times N$ con valor 1 en los píxeles clasificados como red y 0 en los de fondo.
 
 \subsubsection{Binarización Local}
 
-La instancia local se basa en una umbralización adaptativa con núcleo gaussiano [6], implementada con las funciones \texttt{adaptthresh} e \texttt{imbinarize} de MATLAB. Para cada píxel se estima el fondo local $\mu_{\sigma}(i,j)$ como un promedio ponderado de las intensidades de su vecindad, calculado como la convolución de $I_{seg}$ con un núcleo gaussiano bidimensional $G_\sigma$ de desviación estándar $\sigma$, lo que asigna mayor peso a los vecinos cercanos al píxel central:
+La instancia local se basa en una umbralización adaptativa con núcleo gaussiano [6], implementada con las funciones \texttt{adaptthresh} e \texttt{imbinarize} de MATLAB. Para cada píxel se estima el fondo local $\mu_{\sigma}(i,j)$ como un promedio ponderado de las intensidades de su vecindad, calculado como la convolución de $E_{\mathrm{seg}}$ con un núcleo gaussiano bidimensional $G_\sigma$ de desviación estándar $\sigma$, lo que asigna mayor peso a los vecinos cercanos al píxel central:
 
 \begin{equation}
-\mu_{\sigma}(i,j) = \sum_{|u-i| \le h} \sum_{|v-j| \le h} G_{\sigma}(u-i,\, v-j)\, I_{seg}(u,v), \qquad
+\mu_{\sigma}(i,j) = \sum_{|u-i| \le h} \sum_{|v-j| \le h} G_{\sigma}(u-i,\, v-j)\, E_{\mathrm{seg}}(u,v), \qquad
 G_{\sigma}(\delta_u, \delta_v) = \frac{1}{Z}\exp\left(-\frac{\delta_u^2 + \delta_v^2}{2\sigma^2}\right)
 \label{eq:gauss}
 \end{equation}
 
 donde $(\delta_u, \delta_v)$ es el desplazamiento, en píxeles, entre el vecino $(u,v)$ y el píxel central; $h = \lceil 2\sigma \rceil$ es la semianchura del núcleo, que se trunca a $(2h+1)\times(2h+1)$ píxeles; y $Z$ es la suma de los valores de la exponencial dentro de ese soporte, de modo que los pesos suman 1. Los vecinos ubicados fuera de la matriz adoptan el valor del píxel de borde más cercano. En la binarización local, $\sigma = \sigma_L = 21$~px ($\approx 1.2$~$\mu$m), con un núcleo de $85\times85$~px. En \texttt{adaptthresh}, esta desviación estándar corresponde al parámetro \texttt{NeighborhoodSize} con estadístico gaussiano.
 
-Un píxel se clasifica como nanotubo en la máscara binarizada $M_L$, una matriz de $N\times N$ con valor 1 en los píxeles de red y 0 en los de fondo, si su intensidad supera la estimación local de fondo escalada por un factor $\gamma$, que depende del parámetro de sensibilidad $s \in [0,1]$ de \texttt{adaptthresh}:
+Un píxel se clasifica como nanotubo en la máscara local $M_L$ si su intensidad supera la estimación local de fondo escalada por un factor $\gamma$, que depende del parámetro de sensibilidad $s \in [0,1]$ de \texttt{adaptthresh}:
 
 \begin{equation}
-M_L(i,j) = \begin{cases} 1, & I_{seg}(i,j) > \min\left(1,\ \gamma\, \mu_{\sigma_L}(i,j)\right) \\ 0, & \text{en otro caso} \end{cases}, \qquad \gamma = 1.6 - s
+M_L(i,j) = \begin{cases} 1, & E_{\mathrm{seg}}(i,j) > \min\left(1,\ \gamma\, \mu_{\sigma_L}(i,j)\right) \\ 0, & \text{en otro caso} \end{cases}, \qquad \gamma = 1.6 - s
 \label{eq:bin_local}
 \end{equation}
 
-La relación $\gamma = 1.6 - s$ es la que aplica \texttt{adaptthresh} para objetos más brillantes que el fondo (opción \texttt{'ForegroundPolarity','bright'}), y el umbral se acota a 1, el máximo de $I_{seg}$.
+La relación $\gamma = 1.6 - s$ es la que aplica \texttt{adaptthresh} para objetos más brillantes que el fondo (opción \texttt{'ForegroundPolarity','bright'}), y el umbral se acota a 1, el máximo de $E_{\mathrm{seg}}$.
 
 Con $s = 0.55$, $\gamma = 1.05$: un píxel se clasifica como red si su intensidad supera en un 5~\% la media ponderada de su vecindad. Una sensibilidad mayor reduce $\gamma$ y aumenta el número de píxeles clasificados como red. El solapamiento entre las vecindades de píxeles vecinos asegura la continuidad en la captura de variaciones sutiles del gradiente. Esta binarización aporta alta definición pero introduce falsos positivos derivados de pequeñas variaciones eléctricas en el fondo, ya que su criterio es relativo: en zonas de fondo de baja intensidad, una diferencia relativa del 5~\% corresponde a una magnitud absoluta reducida, que el ruido supera con facilidad.
 
 \subsubsection{Binarización Global}
 
-Como complemento, se realiza una binarización global basada en rangos de intensidad mediante una variación del método de Otsu [9] extendida a múltiples clases (\texttt{multithresh}). Dado que la formulación original de dos clases no captura los distintos grupos de intensidades de CNTs presentes en la imagen, se aplica un análisis multinivel que calcula $K = 6$ umbrales $t_1 < \dots < t_6$. Con $t_0 = 0$ y $t_7 = 1$, los umbrales dividen los píxeles de la medición en siete clases según su valor de $I_{seg}$, $C_k = \{(i,j) : t_k \le I_{seg}(i,j) < t_{k+1}\}$ para $k = 0, \dots, 6$ (la última clase incluye también los píxeles con $I_{seg} = 1$), y se eligen de modo que maximicen la varianza entre clases:
+Como complemento, se realiza una binarización global basada en rangos de intensidad mediante una variación del método de Otsu [9] extendida a múltiples clases (\texttt{multithresh}). Dado que la formulación original de dos clases no captura los distintos grupos de intensidades de CNTs presentes en la matriz, se aplica un análisis multinivel que calcula $K = 6$ umbrales $t_1 < \dots < t_6$. Con $t_0 = 0$ y $t_7 = 1$, los umbrales dividen los píxeles de la matriz en siete clases según su valor de $E_{\mathrm{seg}}$, $C_k = \{(i,j) : t_k \le E_{\mathrm{seg}}(i,j) < t_{k+1}\}$ para $k = 0, \dots, 6$ (la última clase incluye también los píxeles con $E_{\mathrm{seg}} = 1$), y se eligen de modo que maximicen la varianza entre clases:
 
 \begin{equation}
 (t_1, \dots, t_6) = \arg\max_{t_1 < \dots < t_6} \sum_{k=0}^{K} \omega_k\,(\mu_k - \mu_{tot})^2
 \label{eq:otsu}
 \end{equation}
 
-donde $\omega_k$ es la fracción de píxeles de la medición que pertenecen a la clase $C_k$, $\mu_k$ es la intensidad media de esos píxeles y $\mu_{tot}$ es la intensidad media de toda la medición. La función \texttt{multithresh} resuelve esta maximización sobre el histograma de $I_{seg}$ con 256 niveles, por lo que los umbrales toman valores múltiplos de $1/255$. La primera clase, que agrupa los valores más bajos de $I_{seg}$ y corresponde a las zonas más oscuras del fondo polimérico, se descarta de la máscara resultante $M_G$:
+donde $\omega_k$ es la fracción de píxeles de la matriz que pertenecen a la clase $C_k$, $\mu_k$ es la intensidad media de esos píxeles y $\mu_{tot}$ es la intensidad media de toda la matriz. La función \texttt{multithresh} resuelve esta maximización sobre el histograma de $E_{\mathrm{seg}}$ con 256 niveles, por lo que los umbrales toman valores múltiplos de $1/255$. La primera clase, que agrupa los valores más bajos de $E_{\mathrm{seg}}$ y corresponde a las zonas más oscuras del fondo polimérico, se descarta de la máscara resultante $M_G$:
 
 \begin{equation}
-M_G(i,j) = \begin{cases} 1, & I_{seg}(i,j) \ge t_1 \\ 0, & \text{en otro caso} \end{cases}
+M_G(i,j) = \begin{cases} 1, & E_{\mathrm{seg}}(i,j) \ge t_1 \\ 0, & \text{en otro caso} \end{cases}
 \label{eq:bin_global}
 \end{equation}
 
-A diferencia de las binarizaciones adaptativas, este umbral es absoluto y único para toda la medición, por lo que excluye las zonas de fondo de baja intensidad que la binarización local, por su criterio relativo, clasificaría como red.
+A diferencia de las binarizaciones adaptativas, este umbral es absoluto y único para toda la matriz, por lo que excluye las zonas de fondo de baja intensidad que la binarización local, por su criterio relativo, clasificaría como red.
 
 \subsubsection{Binarización Regional}
 
-La binarización regional $M_R$ se construye con el mismo principio que la local, según (\ref{eq:gauss}) y (\ref{eq:bin_local}) con la misma sensibilidad, pero empleando un núcleo significativamente mayor: $\sigma = \sigma_R = 51$~px ($\approx 3$~$\mu$m), truncado a $205\times205$~px, de modo que $M_R(i,j) = 1$ si $I_{seg}(i,j) > \min(1, \gamma\, \mu_{\sigma_R}(i,j))$. Su función es integrar la interacción entre las escalas global y local, y descartar regiones de ruido que las otras instancias no logran filtrar, especialmente en imágenes con mayor ruido de origen.
+La binarización regional $M_R$ se construye con el mismo principio que la local, según (\ref{eq:gauss}) y (\ref{eq:bin_local}) con la misma sensibilidad, pero empleando un núcleo significativamente mayor: $\sigma = \sigma_R = 51$~px ($\approx 3$~$\mu$m), truncado a $205\times205$~px, de modo que $M_R(i,j) = 1$ si $E_{\mathrm{seg}}(i,j) > \min(1, \gamma\, \mu_{\sigma_R}(i,j))$. Su función es integrar la interacción entre las escalas global y local, y descartar regiones de ruido que las otras instancias no logran filtrar, especialmente en matrices con mayor ruido de origen.
 
 \subsubsection{Integración de Máscaras}
 
 Cada binarización ofrece resultados consistentes pese a la heterogeneidad del dataset, pero presenta limitaciones complementarias: la local aporta definición a costa de ruido granular, la global secciona bien las capas de intensidad pero con baja definición, y la regional opera como filtro espacial intermedio. Las tres máscaras se integran mediante una conjunción lógica:
 
 \begin{equation}
-M_{e} = A_{50}\left(M_G \,\wedge\, M_R \,\wedge\, M_L\right)
+M_\wedge = A_{50}\left(M_G \,\wedge\, M_R \,\wedge\, M_L\right)
+\label{eq:bin_conjuncion}
+\end{equation}
+
+donde $\wedge$ es la conjunción lógica píxel a píxel (para dos máscaras $M_1$ y $M_2$, $(M_1 \wedge M_2)(i,j) = 1$ solo si $M_1(i,j) = 1$ y $M_2(i,j) = 1$). Solo los píxeles clasificados como red en las tres binarizaciones forman parte de $M_\wedge$. Adicionalmente, se impone una condición de tamaño mínimo por componente conexa. Una componente conexa es un conjunto máximo de píxeles de valor 1 en el que cualquier par puede unirse por una cadena de píxeles de valor 1 vecinos entre sí, considerando vecinos a los 8 píxeles que comparten un lado o una esquina. El operador $A_{50}$ (\texttt{bwareaopen}) elimina (asigna el valor 0 a) las componentes conexas de menos de 50 píxeles ($\approx 0.17$~$\mu$m$^2$) y se aplica a la máscara resultante de la conjunción, para descartar los fragmentos aislados que se forman donde las tres binarizaciones coinciden solo en unos pocos píxeles. En la implementación, el operador se aplica también a $M_G$ antes de la conjunción; este paso no modifica el resultado, ya que toda componente conexa de la conjunción está contenida en una componente conexa de $M_G$, de modo que las componentes de $M_G$ con menos de 50 píxeles solo pueden originar componentes que el operador final elimina.
+
+\subsubsection{Selección de la Máscara Final y Respaldo Local}
+
+La conjunción puede resultar excesivamente restrictiva en algunas mediciones. Para identificar estos casos se emplea la cobertura de una máscara $M$, es decir, la fracción de píxeles clasificados como red:
+
+\begin{equation}
+c(M) = \frac{1}{N^2}\sum_{i=1}^{N}\sum_{j=1}^{N} M(i,j)
+\label{eq:cobertura}
+\end{equation}
+
+La máscara final $M_{\mathrm{F}}$ se selecciona entre la conjunción y la binarización local según la cobertura de la conjunción:
+
+\begin{equation}
+M_{\mathrm{F}} =
+\begin{cases}
+M_\wedge, & c(M_\wedge) \ge 0.15 \\
+A_{50}(M_L), & \text{en otro caso}
+\end{cases}
 \label{eq:bin_final}
 \end{equation}
 
-donde $\wedge$ es la conjunción lógica píxel a píxel (para dos máscaras $M_1$ y $M_2$, $(M_1 \wedge M_2)(i,j) = 1$ solo si $M_1(i,j) = 1$ y $M_2(i,j) = 1$). Solo los píxeles clasificados como red en las tres binarizaciones forman parte de la máscara final $M_e$. Adicionalmente, se impone una condición de tamaño mínimo por componente conexa. Una componente conexa es un conjunto máximo de píxeles de valor 1 en el que cualquier par puede unirse por una cadena de píxeles de valor 1 vecinos entre sí, considerando vecinos a los 8 píxeles que comparten un lado o una esquina. El operador $A_{50}$ (\texttt{bwareaopen}) elimina (asigna el valor 0 a) las componentes conexas de menos de 50 píxeles ($\approx 0.17$~$\mu$m$^2$) y se aplica a la máscara resultante de la conjunción, para descartar los fragmentos aislados que se forman donde las tres binarizaciones coinciden solo en unos pocos píxeles. En la implementación, el operador se aplica también a $M_G$ antes de la conjunción; este paso no modifica el resultado, ya que toda componente conexa de la conjunción está contenida en una componente conexa de $M_G$, de modo que las componentes de $M_G$ con menos de 50 píxeles solo pueden originar componentes que el operador final elimina.
-
-\subsubsection{Activación Local de Respaldo}
-
-Cuando la cobertura de la máscara integrada, $c = \frac{1}{N^2}\sum_{i,j} M_e(i,j)$, es decir, la fracción de píxeles clasificados como red, cae por debajo del 15~\%, se sustituye $M_e$ por la binarización local, $M_e = A_{50}(M_L)$, con los mismos parámetros empleados en la conjunción. Este mecanismo no introduce un método alternativo con parámetros propios sino que reutiliza el componente local del pipeline. El umbral de $0.15$ se fijó a partir de la inspección de las coberturas obtenidas por la conjunción, como un límite inferior por debajo del cual la máscara deja de representar la red visible en $I_{seg}$; de este modo, el respaldo actúa únicamente en las mediciones en las que la conjunción resulta excesivamente restrictiva.
+Cuando la cobertura de la conjunción cae por debajo del 15~\%, se activa el respaldo local: la máscara final es la binarización local, con la misma condición de tamaño mínimo empleada en la conjunción. Este mecanismo no introduce un método alternativo con parámetros propios sino que reutiliza el componente local del pipeline. El umbral de $0.15$ se fijó a partir de la inspección de las coberturas obtenidas por la conjunción, como un límite inferior por debajo del cual la máscara deja de representar la red visible en $E_{\mathrm{seg}}$; de este modo, el respaldo actúa únicamente en las mediciones en las que la conjunción resulta excesivamente restrictiva. En el resto de este documento, todas las operaciones posteriores a la segmentación se aplican sobre $M_{\mathrm{F}}$, sea cual sea la máscara seleccionada.
 
 La Figura~\ref{fig:met_binarizacion} ilustra las binarizaciones y su integración sobre la medición 0c-2.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{metodologia/met_binarizacion.pdf}
-\caption{Segmentación de la medición 0c-2. (a) Matriz normalizada $I_{seg}$. (b) Binarización local $M_L$. (c) Binarización regional $M_R$. (d) Binarización global $M_G$. (e) Máscara estricta $M_e$. (f) Contorno de $M_e$ (rojo) superpuesto a $I_{seg}$.}
+\caption{Segmentación de la medición 0c-2. (a) Matriz normalizada $E_{\mathrm{seg}}$. (b) Binarización local $M_L$. (c) Binarización regional $M_R$. (d) Binarización global $M_G$. (e) Máscara final $M_{\mathrm{F}}$. (f) Contorno de $M_{\mathrm{F}}$ (rojo) superpuesto a $E_{\mathrm{seg}}$.}
 \label{fig:met_binarizacion}
 \end{figure}
 
@@ -277,21 +341,20 @@ La Figura~\ref{fig:met_binarizacion} ilustra las binarizaciones y su integració
 \subsection{Representaciones de Trabajo}
 \label{sec:met_representaciones}
 
-A partir de la salida del pipeline se construyen cuatro representaciones que sirven como insumo común a los distintos grupos de descriptores: tres máscaras binarias derivadas de la segmentación y una imagen eléctrica en la escala original del canal eléctrico, utilizada por los descriptores que requieren sus valores sin normalizar.
+A partir de la salida de la segmentación se construyen tres representaciones binarias que sirven como insumo común a los distintos grupos de descriptores:
 
 \begin{itemize}
-    \item \textbf{Máscara estricta:} Contiene únicamente los píxeles clasificados como parte de red por el pipeline. Corresponde a $M_{e}$, definida en (\ref{eq:bin_final}).
-    \item \textbf{Máscara morfológica:} Aplica un cierre morfológico sobre la máscara estricta para unir estructuras y reparar discontinuidades [6]: $M_{mor} = (M_e \oplus B_r) \ominus B_r$, donde $B_r$ es un elemento estructural en forma de disco de radio $r = 3$~px (\texttt{strel('disk',3)}, que MATLAB aproxima mediante una combinación de segmentos lineales), centrado en el origen. Para una máscara genérica $M$, la dilatación $M \oplus B_r$ asigna el valor 1 a todo píxel cuyo disco centrado intersecta al menos un píxel de valor 1 de $M$, lo que engrosa las estructuras y une las que están separadas por huecos estrechos; la erosión $M \ominus B_r$ conserva el valor 1 únicamente en los píxeles cuyo disco centrado está contenido por completo en la región de valor 1, lo que devuelve los bordes exteriores a su posición sin volver a abrir los huecos rellenados. Este radio repara granularidades y recupera continuidades a través de huecos de hasta aproximadamente $2r = 6$~px ($\approx 350$~nm), suficiente para evitar la sobresegmentación de regiones profundas sin destruir la morfología de la red.
+    \item \textbf{Máscara final:} Contiene únicamente los píxeles clasificados como parte de red por la segmentación. Corresponde a $M_{\mathrm{F}}$, definida en (\ref{eq:bin_final}).
+    \item \textbf{Máscara morfológica:} Aplica un cierre morfológico sobre la máscara final para unir estructuras y reparar discontinuidades [6]: $M_{\mathrm{C}} = (M_{\mathrm{F}} \oplus B_r) \ominus B_r$, donde $B_r$ es un elemento estructural en forma de disco de radio $r = 3$~px (\texttt{strel('disk',3)}, que MATLAB aproxima mediante una combinación de segmentos lineales), centrado en el origen. Para una máscara genérica $M$, la dilatación $M \oplus B_r$ asigna el valor 1 a todo píxel cuyo disco centrado intersecta al menos un píxel de valor 1 de $M$, lo que engrosa las estructuras y une las que están separadas por huecos estrechos; la erosión $M \ominus B_r$ conserva el valor 1 únicamente en los píxeles cuyo disco centrado está contenido por completo en la región de valor 1, lo que devuelve los bordes exteriores a su posición sin volver a abrir los huecos rellenados. Este radio repara granularidades y recupera continuidades a través de huecos de hasta aproximadamente $2r = 6$~px ($\approx 350$~nm), suficiente para evitar la sobresegmentación de regiones profundas sin destruir la morfología de la red.
     \item \textbf{Esqueleto:} Se obtiene mediante la función \texttt{bwskel} sobre la máscara morfológica. Esta función adelgaza cada componente conexa eliminando de forma iterativa píxeles de sus bordes, sin desconectarla ni abrir o cerrar huecos, hasta reducirla a líneas de 1 px de grosor que siguen su eje central y conservan su topología. Posteriormente se aplican cinco iteraciones de poda de píxeles mediante \texttt{bwmorph(\texttt{'spur'}, 5)}: en cada iteración se eliminan los puntos extremos del esqueleto, es decir, los píxeles con un solo vecino de valor 1 entre sus 8 vecinos. De este modo se recortan progresivamente las ramas y se eliminan las ramas espurias cortas, de hasta aproximadamente 5 px, que aparecen al esqueletizar bordes irregulares, evitando inflar artificialmente los descriptores basados en él. Las ramas largas pierden también hasta 5 px en su extremo libre. El esqueleto resultante se denota $S$.
-    \item \textbf{Imagen eléctrica reconstruida $I_B$:} Canal eléctrico en su escala original, obtenido deshaciendo la normalización aplicada durante la corrección de crosstalk: se resta del canal sin normalizar el mapa $\hat I_T$ de (\ref{eq:crosstalk_ajuste}), reescalado por la MAD, $I_{corr,B} = I_{raw} - \mathrm{MAD}(I_{raw})\,\hat I_T$. Se aplica el filtro de eliminación de outliers SyP de la Sección~\ref{sec:met_syp} con $X = I_{corr,B}$, ventana $5\times5$ y $\lambda=3$, cuyo resultado se denota $I_{syp,B}$. Para corregir artefactos de fondo entre filas sin afectar gradientes reales, se construye un perfil vertical 1D con la mediana de cada fila, $p(i) = \mathrm{med}\{I_{syp,B}(i,1), \dots, I_{syp,B}(i,N)\}$, que se suaviza con la función \texttt{smoothdata} de MATLAB usando el método \texttt{rloess} con una ventana de $w = 50$ filas, lo que preserva la tendencia global de la imagen. Este método estima, para cada fila $i$, el valor suavizado $\tilde p(i)$ ajustando por mínimos cuadrados un polinomio de segundo grado a los valores de $p$ de las $w$ filas de la ventana centrada en $i$, y repite el ajuste reduciendo el peso de las filas con residuos grandes, de modo que los saltos abruptos entre filas no arrastren la tendencia $\tilde p$. La diferencia entre el perfil original y el suavizado se resta a la fila correspondiente: $I_B(i,j) = I_{syp,B}(i,j) - \left(p(i) - \tilde p(i)\right)$. A diferencia de $I_{seg}$, $I_B$ no pasa por la corrección de fondo por línea, el filtrado de líneas horizontales ni la normalización; conserva por tanto las unidades nominales del canal eléctrico, de modo que sus valores son comparables dentro de una medición, pero no necesariamente entre sesiones de medición.
 \end{itemize}
 
 La Figura~\ref{fig:met_representaciones} muestra las representaciones de trabajo de la medición 0c-2.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{metodologia/met_representaciones.pdf}
-\caption{Representaciones de trabajo de la medición 0c-2. (a) Máscara morfológica $M_{mor}$. (b) Esqueleto $S$ (rojo) superpuesto a $M_{mor}$ (gris). (c) Imagen eléctrica reconstruida $I_B$, en unidades nominales del canal eléctrico.}
+\includegraphics[width=0.67\textwidth]{metodologia/met_representaciones.pdf}
+\caption{Representaciones de trabajo de la medición 0c-2. (a) Máscara morfológica $M_{\mathrm{C}}$. (b) Esqueleto $S$ (rojo) superpuesto a $M_{\mathrm{C}}$ (gris).}
 \label{fig:met_representaciones}
 \end{figure}
 
@@ -355,43 +418,17 @@ descriptores sobre las mismas imágenes con tres binarizaciones, manteniendo
 idénticos la lógica de descriptores y el conjunto de líneas de barrido (semilla
 fija), de modo que la máscara sea la única variable:
 \begin{enumerate}
-    \item \textbf{Pipeline:} la máscara morfológica $M_{mor}$ de este trabajo.
+    \item \textbf{Pipeline:} la máscara morfológica $M_{\mathrm{C}}$ de este trabajo.
     \item \textbf{Método de [4]:} escala de grises $\rightarrow$ ecualización
     adaptativa de histograma (CLAHE) $\rightarrow$ filtro de mediana $\rightarrow$
     umbral al 75\% del valor máximo, aplicado sobre la señal eléctrica cruda, tal
     como se describe en [4].
     \item \textbf{Umbral de [4] controlado:} únicamente el umbral al 75\% del
-    máximo, aplicado sobre la señal preprocesada $I_{seg}$ de este trabajo. Aísla
+    máximo, aplicado sobre la señal preprocesada $E_{\mathrm{seg}}$ de este trabajo. Aísla
     el efecto de la binarización manteniendo fijo el preprocesamiento.
 \end{enumerate}
 Se compara CNTS en función del voltaje a 10~Hz (la única frecuencia comparable
 con [4]) para los tres métodos.
-
-\subsection{Descriptores de Intensidad de Gradiente}
-
-A diferencia de los anteriores, estos descriptores requieren los valores absolutos del gradiente de capacitancia, ya que las regiones de mayor intensidad corresponden a CNTs más superficiales o con mayor densidad local. Por ello se trabaja sobre la imagen eléctrica reconstruida $I_B$, evaluando los píxeles correspondientes a la máscara estricta $M_{e}$:
- 
-\begin{itemize}
-    \item \textbf{Intensidad media:} valor medio del gradiente de capacitancia en los CNTs.
-    \item \textbf{Intensidad STD:} desviación estándar del gradiente de capacitancia en los CNTs.
-    \item \textbf{Intensidad P90:} percentil 90 del gradiente de capacitancia en los CNTs.
-    \item \textbf{Gradiente medio:} magnitud promedio de los cambios píxel a píxel del gradiente de capacitancia, evaluada únicamente sobre los píxeles de la máscara estricta. El cálculo emplea diferencias horizontales y verticales:
- 
-    \begin{equation}
-    |\nabla I_B|(x,y) = \sqrt{\left(\frac{\partial I_B}{\partial x}\right)^{2} + \left(\frac{\partial I_B}{\partial y}\right)^{2}}
-    \label{eq:gradiente}
-    \end{equation}
- 
-    La magnitud resultante (variación por píxel) se divide por la resolución espacial ($58.6$ nm/px) para expresarla como una derivada espacial real en pm/nm. Como todas las imágenes comparten la misma resolución, los valores son directamente comparables entre imágenes.
-\end{itemize}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{mosaico_intensidad.pdf}
-    \caption{Señal eléctrica reconstruida $I_B$ (amplitud del 2.º armónico, $\propto \partial C/\partial z$, en pm) para el set 2b. Los valores altos corresponden a CNTs más superficiales o de mayor densidad local.}
-    \label{fig:met_intensidad}
-\end{figure}
-
 
 \subsection{Descriptores de Morfología}
 
@@ -475,7 +512,7 @@ es apreciable.
 Estos descriptores evalúan la red como un todo para identificar caminos continuos y propiedades globales sobre las distintas máscaras:
 
 \begin{itemize}
-    \item \textbf{Cobertura total:} cociente entre los píxeles de la máscara estricta y los píxeles totales de la imagen.
+    \item \textbf{Cobertura total:} cobertura $c(M_{\mathrm{F}})$ de la máscara final, definida en (\ref{eq:cobertura}), es decir, el cociente entre los píxeles de valor 1 de $M_{\mathrm{F}}$ y los píxeles totales de la matriz.
     \item \textbf{Índice de percolación:} cociente entre el área del componente conexo más grande de la máscara morfológica y el área total ocupada por todas las componentes:
 
     \begin{equation}
@@ -496,28 +533,11 @@ Estos descriptores evalúan la red como un todo para identificar caminos continu
     \label{fig:met_conectividad}
 \end{figure}
 
- \subsection{Descriptores de Perfil de Gradiente}
- 
-Este grupo analiza tendencias verticales sobre la imagen eléctrica reconstruida $I_B$. Para cada fila se calcula la mediana de intensidad, generando un perfil vertical 1D. Sobre este perfil se ajusta una recta $\hat{p}_{i} = m\,i + b$ por mínimos cuadrados, a partir de la cual se evalúan:
- 
-\begin{itemize}
-    \item \textbf{Tendencia:} pendiente $m$ del ajuste lineal del perfil respecto al índice de fila. El coeficiente del ajuste (en pm por fila, es decir por píxel) se divide por la resolución espacial ($58.6 $ nm/px) para expresar la pendiente como una derivada vertical real en pm/nm, comparable entre imágenes
-    \item \textbf{ Rango:} diferencia entre los valores máximo y mínimo del perfil.
-\item \textbf{Ruido RMS horizontal:} desviación cuadrática media del perfil respecto a la recta de tendencia.
-\end{itemize}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{mosaico_perfil.pdf}
-    \caption{Perfil vertical de $I_B$ (mediana por fila, en pm) y su ajuste lineal para las nueve imágenes del set 2b. La pendiente del ajuste define la tendencia y la dispersión respecto a la recta el RMS del residuo.}
-    \label{fig:met_perfil}
-\end{figure}
-
-
 \section{Análisis de Datos y Aprendizaje Automático}
+\label{sec:met_analisis}
  
-A partir de los 20 descriptores extraídos por imagen se construye una matriz de
-$81 \times 20$ que constituye el insumo del análisis. Este se organiza en dos
+A partir de los 13 descriptores extraídos por medición se construye la matriz de
+descriptores $X$, de $81 \times 13$, que constituye el insumo del análisis. Este se organiza en dos
 etapas. La primera es un análisis exploratorio no supervisado que caracteriza la estructura interna del espacio de descriptores y su redundancia. La segunda corresponde a los modelos supervisados:
 el análisis predictivo de regresión hacia la eficacia de apantallamiento (SE),
 que constituye el objetivo central del trabajo.
@@ -530,7 +550,7 @@ matriz estandarizada (media cero, varianza unitaria) se aplican dos
 herramientas complementarias.
  
 \paragraph{Estructura de correlación.} Se calcula la matriz de correlación de
-Pearson entre los 20 descriptores. Para identificar grupos de descriptores
+Pearson entre los 13 descriptores. Para identificar grupos de descriptores
 redundantes se aplica un agrupamiento jerárquico de enlace promedio sobre la
 distancia $d_{ij}=1-|r_{ij}|$, que une descriptores fuertemente correlacionados
 (en cualquier signo) en familias.
