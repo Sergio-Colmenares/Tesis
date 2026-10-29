@@ -42,3 +42,8 @@ Las métricas actuales (cobertura, N_c, FN = N_c/c, CV entre mediciones, píxele
 - Nueva subsección **3.1.8 "Validación del procesamiento y elección de parámetros"**: métricas definidas una vez, barridos y **criterio de elección explícito** (cobertura intermedia, CV de cobertura mínimo, FN entre Q1 y la mediana); remisiones desde cada parámetro en 3.1.1–3.1.7. El barrido RLOESS se elimina (E_B retirado).
 - ¿Incluir la validación de los parámetros de orientación (σ_d = 2, σ_i = 8; `codigo/orientacion/`)?
 - Párrafo más explícito de la etapa 5 (descriptores) en la introducción del Cap. 3: borrador propuesto en la conversación (familias, qué mide cada una y sobre qué matriz).
+
+## Mosaicos de la Sección 3.2 (`codigo/figuras/mosaicos_2b.m`)
+- **Resolución:** cada panel está incrustado a ~280×280 px (no 1024) y suavizado; solo las superposiciones son vectoriales. No permiten ver cada píxel al hacer zoom (mismo pendiente que las `met_*`).
+- **Conectividad:** no aparece la componente mayor en rojo (0 % de píxeles rojos); el esqueleto se dibuja con un trazo grueso que cubre casi toda la máscara. El pie (Figura 3.11) describe rojo + verde: hay que regenerar la figura o ajustar el pie.
+- **Títulos internos:** cada mosaico trae un título en gris (p. ej. «Muestreo de cuerdas (CNTD/CNTA/CNTS)») que se superpone con la etiqueta P2 y repite el pie; las etiquetas usan Arial, no Times.
