@@ -366,7 +366,7 @@ La Figura~\ref{fig:met_representaciones} muestra las matrices para la extracció
 \section{Extracción de Descriptores Morfológicos}
 \label{sec:met_descriptores}
 
-Una vez construidas las matrices para la extracción de descriptores (Sección~\ref{sec:met_representaciones}), sobre ellas se calculan 13 descriptores morfológicos por medición, agrupados según la característica de la red que cuantifican: distribución espacial, forma, orientación y conectividad. Cada descriptor resume una medición en un único valor escalar. Por la diversidad de las características medidas, cada grupo se evalúa sobre la representación de la red que le corresponde: la máscara final $M_{\mathrm{F}}$, la máscara morfológica $M_{\mathrm{C}}$ o el esqueleto $S$. Todos los descriptores se calculan con la función \texttt{calcular\_descriptores}, desarrollada en MATLAB para este trabajo. La Tabla~\ref{tab:descriptores} resume los 13 descriptores, su símbolo, la matriz sobre la que se calculan y su unidad; los 13 valores de las 81 mediciones forman la matriz de descriptores $X$ (Sección~\ref{sec:met_analisis}).
+Una vez construidas las matrices para la extracción de descriptores (Sección~\ref{sec:met_representaciones}), sobre ellas se calculan 13 descriptores morfológicos por medición, agrupados según la característica de la red que cuantifican: distribución espacial, forma, orientación y conectividad. Cada descriptor resume una medición en un único valor escalar. Todos los descriptores se calculan con la función \texttt{calcular\_descriptores}, desarrollada en MATLAB para este trabajo. La Tabla~\ref{tab:descriptores} resume los 13 descriptores, su símbolo, la matriz sobre la que se calculan y su unidad; los 13 valores de las 81 mediciones forman la matriz de descriptores $X$ (Sección~\ref{sec:met_analisis}).
 
 \begin{table}[H]
 \centering
@@ -402,7 +402,7 @@ Varias definiciones de esta sección se basan en las componentes conexas de una 
 
 \subsection{Descriptores de Distribución Espacial}
 
-Estos descriptores siguen la metodología propuesta en [4] y se calculan sobre la máscara morfológica $M_{\mathrm{C}}$, simulando un escaneo con líneas aleatorias. Se seleccionan 100 filas de $M_{\mathrm{C}}$, $r_1, \dots, r_{100}$, cada una elegida con probabilidad uniforme entre las $N$ filas mediante la función \texttt{randi} de MATLAB, con la semilla del generador de números aleatorios fijada en 42 (\texttt{rng(42)}); en consecuencia, la selección es la misma para todas las mediciones y puede repetir una fila. Cada fila es paralela a la línea de barrido del microscopio.
+Estos descriptores cuantifican cómo se reparte la red en el plano: si los CNTs se distribuyen con espaciados regulares o se concentran en aglomeraciones. Siguen la metodología propuesta en [4] y se calculan sobre la máscara morfológica $M_{\mathrm{C}}$, simulando un escaneo con líneas aleatorias. Se seleccionan 100 filas de $M_{\mathrm{C}}$, $r_1, \dots, r_{100}$, cada una elegida con probabilidad uniforme entre las $N$ filas mediante la función \texttt{randi} de MATLAB, con la semilla del generador de números aleatorios fijada en 42 (\texttt{rng(42)}); en consecuencia, la selección es la misma para todas las mediciones y puede repetir una fila. Cada fila es paralela a la línea de barrido del microscopio.
 
 Sobre cada fila seleccionada se identifican los tramos de CNT, es decir, las secuencias máximas de píxeles contiguos de valor 1. La longitud de un tramo es su número de píxeles multiplicado por $\Delta$. El espaciado entre dos tramos consecutivos de la misma fila es el número de píxeles de valor 0 que los separan, multiplicado por $\Delta$. Los segmentos de valor 0 comprendidos entre el borde de la matriz y el primer o el último tramo de la fila no se consideran espaciados, ya que no están delimitados por dos regiones de CNT. De este modo se obtienen, para cada medición, el conjunto de las longitudes de todos los tramos, $\{\ell_1, \dots, \ell_{n_\ell}\}$, y el conjunto de todos los espaciados, $\{s_1, \dots, s_{n_s}\}$, ambos en nanómetros.
 
@@ -476,7 +476,7 @@ Se compara CNTS en función del voltaje a 10~Hz, la única frecuencia comparable
 
 \subsection{Descriptores de Forma}
 
-Estos descriptores caracterizan el tamaño y la forma de las regiones de la red. Se calculan sobre las componentes conexas $C_k$ de $M_{\mathrm{C}}$ con la función \texttt{regionprops} de MATLAB [6], salvo la tortuosidad, que se calcula sobre el esqueleto $S$.
+Estos descriptores caracterizan el tamaño y la forma de las regiones de la red, y cuánto se desvían sus estructuras de una trayectoria recta. Se calculan sobre las componentes conexas $C_k$ de $M_{\mathrm{C}}$ con la función \texttt{regionprops} de MATLAB [6], salvo la tortuosidad, que se calcula sobre el esqueleto $S$.
 
 \paragraph{Área media y desviación estándar del área.}
 El área de cada componente es su número de píxeles multiplicado por el área de un píxel, $A_k = |C_k|\,\Delta^2$, expresada en $\mu$m$^2$. Los descriptores son la media y la desviación estándar muestral de las áreas de las $N_{\mathrm{C}}$ componentes:
@@ -488,25 +488,7 @@ s_A = \sqrt{\frac{1}{N_{\mathrm{C}}-1}\sum_{k=1}^{N_{\mathrm{C}}} \left(A_k - \b
 \end{equation}
 
 \paragraph{Elongación media.}
-A cada componente se asocia la elipse que tiene sus mismos momentos centrales de segundo orden. Si $(x_p, y_p)$ son las coordenadas de columna y fila del píxel $p$ de la componente y $(\bar x_k, \bar y_k)$ su centroide, los momentos se calculan como
-
-\begin{equation}
-u_{xx} = \frac{1}{|C_k|}\sum_{p \in C_k} (x_p - \bar x_k)^2 + \frac{1}{12}, \qquad
-u_{yy} = \frac{1}{|C_k|}\sum_{p \in C_k} (y_p - \bar y_k)^2 + \frac{1}{12}, \qquad
-u_{xy} = \frac{1}{|C_k|}\sum_{p \in C_k} (x_p - \bar x_k)(y_p - \bar y_k)
-\label{eq:momentos}
-\end{equation}
-
-donde el término $1/12$ es el momento de segundo orden de un píxel considerado como un cuadrado de lado unitario. Las longitudes de los ejes mayor y menor de la elipse, en píxeles, son
-
-\begin{equation}
-a_k = 2\sqrt{2}\sqrt{u_{xx} + u_{yy} + \delta_k}, \qquad
-b_k = 2\sqrt{2}\sqrt{u_{xx} + u_{yy} - \delta_k}, \qquad
-\delta_k = \sqrt{(u_{xx} - u_{yy})^2 + 4u_{xy}^2}
-\label{eq:ejes}
-\end{equation}
-
-que corresponden a los parámetros \texttt{MajorAxisLength} y \texttt{MinorAxisLength} de \texttt{regionprops}. El descriptor es el promedio, sobre las $N_{\mathrm{C}}$ componentes, del cociente entre ambos ejes:
+A cada componente se asocia la elipse que tiene sus mismos momentos centrales de segundo orden [6]; $a_k$ y $b_k$ son las longitudes de los ejes mayor y menor de esa elipse, en píxeles (parámetros \texttt{MajorAxisLength} y \texttt{MinorAxisLength} de \texttt{regionprops}). El descriptor es el promedio, sobre las $N_{\mathrm{C}}$ componentes, del cociente entre ambos ejes:
 
 \begin{equation}
 \bar e = \frac{1}{N_{\mathrm{C}}}\sum_{k=1}^{N_{\mathrm{C}}} \frac{a_k}{b_k}
@@ -537,7 +519,7 @@ Cuantifica cuánto se desvían las estructuras de la red respecto de una trayect
 
 \subsection{Descriptores de Orientación}
 
-La orientación de la red se evalúa mediante el tensor de estructura [6], calculado sobre la máscara morfológica $M_{\mathrm{C}}$. Como el gradiente de una máscara binaria solo es distinto de cero en los bordes y cambia de forma abrupta, la máscara se suaviza primero con un núcleo gaussiano de desviación estándar $\sigma_d = 2$~px, según (\ref{eq:gauss}), con la función \texttt{imgaussfilt}, lo que produce una matriz de valores continuos $Q = G_{\sigma_d} * M_{\mathrm{C}}$, donde $*$ denota la convolución. Sobre $Q$ se calculan las derivadas $\partial Q/\partial x$ y $\partial Q/\partial y$ por diferencias centrales, según (\ref{eq:diferencias}), y los productos de las derivadas se promedian localmente con un segundo núcleo gaussiano, de desviación estándar $\sigma_i = 8$~px:
+Estos descriptores cuantifican si las estructuras de la red siguen una dirección preferente. La orientación se evalúa mediante el tensor de estructura [6], calculado sobre la máscara morfológica $M_{\mathrm{C}}$. Como el gradiente de una máscara binaria solo es distinto de cero en los bordes y cambia de forma abrupta, la máscara se suaviza primero con un núcleo gaussiano de desviación estándar $\sigma_d = 2$~px, según (\ref{eq:gauss}), con la función \texttt{imgaussfilt}, lo que produce una matriz de valores continuos $Q = G_{\sigma_d} * M_{\mathrm{C}}$, donde $*$ denota la convolución. Sobre $Q$ se calculan las derivadas $\partial Q/\partial x$ y $\partial Q/\partial y$ por diferencias centrales, según (\ref{eq:diferencias}), y los productos de las derivadas se promedian localmente con un segundo núcleo gaussiano, de desviación estándar $\sigma_i = 8$~px:
 
 \begin{equation}
 J_{xx} = G_{\sigma_i} * \left(\frac{\partial Q}{\partial x}\right)^2, \qquad
@@ -599,29 +581,33 @@ Valores próximos a 1 indican una alta alineación direccional, y valores próxi
 
 \subsection{Descriptores de Conectividad y Topología}
 
-Estos descriptores evalúan la red como un todo, para identificar caminos continuos y propiedades globales, sobre las distintas matrices:
+Estos descriptores evalúan la red como un todo: qué fracción de la superficie ocupa, en qué medida forma una estructura continua y cuán extensa es.
 
-\begin{itemize}
-    \item \textbf{Cobertura total:} fracción de píxeles clasificados como red en la máscara final, $c(M_{\mathrm{F}})$, definida en (\ref{eq:cobertura}).
-    \item \textbf{Índice de percolación:} cociente entre el área de la componente conexa más grande de $M_{\mathrm{C}}$ y el área total ocupada por todas las componentes:
+\paragraph{Cobertura total.}
+Fracción de píxeles clasificados como red, $c(M_{\mathrm{F}})$, definida en (\ref{eq:cobertura}). Se calcula sobre la máscara final y no sobre $M_{\mathrm{C}}$, para no incluir los píxeles que agrega el cierre morfológico.
 
-    \begin{equation}
-    P_{\mathrm{perc}} = \frac{\max_k |C_k|}{\sum_{k=1}^{N_{\mathrm{C}}} |C_k|}
-    \label{eq:percolacion}
-    \end{equation}
+\paragraph{Índice de percolación.}
+Cociente entre el área de la componente conexa más grande de $M_{\mathrm{C}}$ y el área total ocupada por todas las componentes:
 
-    Cuantifica la dominancia de la componente mayor sobre la red segmentada: valores cercanos a 1 indican que casi toda la red pertenece a una sola estructura conexa.
+\begin{equation}
+P_{\mathrm{perc}} = \frac{\max_k |C_k|}{\sum_{k=1}^{N_{\mathrm{C}}} |C_k|}
+\label{eq:percolacion}
+\end{equation}
 
-    \item \textbf{Longitud de red:} longitud total del esqueleto $S$, obtenida al sumar las distancias entre sus píxeles vecinos:
+Cuantifica la dominancia de la componente mayor sobre la red segmentada: valores cercanos a 1 indican que casi toda la red pertenece a una sola estructura conexa. El índice no evalúa si esa componente atraviesa la medición de un borde a otro.
 
-    \begin{equation}
-    L_S = \left(n_o + \sqrt{2}\, n_d\right) \Delta
-    \label{eq:longitud}
-    \end{equation}
+\paragraph{Longitud de red.}
+Longitud total del esqueleto $S$, obtenida al sumar las distancias entre sus píxeles vecinos:
 
-    donde $n_o$ es el número de pares de píxeles de valor 1 de $S$ que comparten un lado (horizontal o verticalmente), y $n_d$, el número de pares que comparten solo una esquina y cuyos dos vecinos comunes tienen valor 0. Esta última condición evita contar dos veces un mismo tramo: cuando dos píxeles diagonales están unidos además a través de un vecino común, el recorrido ya está contado por los dos pasos horizontal y vertical. $L_S$ se expresa en $\mu$m.
-    \item \textbf{Número de fragmentos:} número de componentes conexas de $M_{\mathrm{C}}$, $N_{\mathrm{C}}$, calculado con la función \texttt{bwconncomp} con vecindad de 8 píxeles.
-\end{itemize}
+\begin{equation}
+L_S = \left(n_o + \sqrt{2}\, n_d\right) \Delta
+\label{eq:longitud}
+\end{equation}
+
+donde $n_o$ es el número de pares de píxeles de valor 1 de $S$ que comparten un lado, y $n_d$, el número de pares que comparten solo una esquina y cuyos dos vecinos comunes tienen valor 0. Esta condición evita contar dos veces un mismo recorrido: si dos píxeles diagonales están unidos también a través de un vecino común, el recorrido ya está contado por los pasos horizontal y vertical. $L_S$ se expresa en $\mu$m.
+
+\paragraph{Número de fragmentos.}
+Número de componentes conexas de $M_{\mathrm{C}}$, $N_{\mathrm{C}}$, calculado con la función \texttt{bwconncomp} con vecindad de 8 píxeles. Un número alto indica una red dividida en muchas regiones aisladas.
 
 \begin{figure}[H]
     \centering
