@@ -45,5 +45,5 @@ Las métricas actuales (cobertura, N_c, FN = N_c/c, CV entre mediciones, píxele
 
 ## Mosaicos de la Sección 3.2 (`codigo/figuras/mosaicos_2b.m`)
 - **Resolución:** cada panel está incrustado a ~280×280 px (no 1024) y suavizado; solo las superposiciones son vectoriales. No permiten ver cada píxel al hacer zoom (mismo pendiente que las `met_*`).
-- **Conectividad:** la figura no muestra la componente mayor en rojo; el esqueleto se dibuja con trazo grueso. Decisión del autor: se conservan los mosaicos tal como están; el pie de la Figura 3.11 se ajustó a lo que muestra.
+- **Conectividad:** el autor confirma que la figura muestra la componente mayor en rojo; se conservan los mosaicos tal como están y el pie original de la Figura 3.11.
 - **Títulos internos:** cada mosaico trae un título en gris (p. ej. «Muestreo de cuerdas (CNTD/CNTA/CNTS)») que se superpone con la etiqueta P2 y repite el pie; las etiquetas usan Arial, no Times.
